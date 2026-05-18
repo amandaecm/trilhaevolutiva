@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Evolução - Grupo Status</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
@@ -67,10 +68,10 @@
     </div>
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
-        <h2>Recuperar Senha</h2>
-        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro para recuperar seus dados de acesso.</p>
+        <h2>Recuperar Senha com Segurança</h2>
+        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o seu e-mail corporativo. Se ele estiver cadastrado, enviaremos sua senha de forma privada para a sua caixa de entrada.</p>
         <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail">
-        <button onclick="executarEsqueceuSenha()" style="background: var(--primary);">Consultar Credenciais</button>
+        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Senha por E-mail</button>
         <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
     </div>
 
@@ -118,10 +119,19 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
+    // ⚠️ CONFIGURAÇÃO DO EMAILJS: INSIRA AS SUAS CHAVES COPIADAS DO SITE DO EMAILJS AQUI
+    const EMAILJS_SERVICE_ID = "service_5rt8wnw";
+    const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
+    const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
+
+    // Inicializa a biblioteca de segurança de e-mail assim que o script carrega
+    if(EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+    }
+
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
-    // Função executada automaticamente ao carregar a página
     window.onload = function() {
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
@@ -189,7 +199,6 @@
                 alert("Atividade enviada com sucesso!");
             }
             
-            // Correção: Limpa os campos e atualiza a tela sem deslogar
             document.getElementById('desc-atividade').value = "";
             document.getElementById('arquivo-input').value = "";
             mostrarCorretor();
@@ -225,22 +234,54 @@
         const u = listaUsuarios.find(user => user.email === e && user.senha === s);
         if (u) {
             usuarioLogado = u;
-            // Salva a sessão para não perder o login ao atualizar
             sessionStorage.setItem('usuario_logado_status', JSON.stringify(u));
             document.getElementById('tela-login').classList.add('hidden');
             u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
         } else alert("E-mail ou senha incorretos");
     }
 
+    // LÓGICA DE PRIVACIDADE DO PROJETO: Localiza a senha e dispara oculto via API
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
+        const btn = document.getElementById('btn-recuperar');
+        
         if(!emailInformado) return alert("Por favor, digite seu e-mail.");
+        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) return alert("Configuração incompleta! Você precisa configurar os IDs do EmailJS no script do código.");
+
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
+
+        // Princípio de segurança cibernética: Sempre dar a mesma resposta na tela para evitar que hackers descubram quais e-mails existem cadastrados no sistema.
+        btn.disabled = true;
+        btn.innerText = "Processando disparo criptografado...";
+
         if(usuarioEncontrado) {
-            alert(`Sua senha cadastrada é: ${usuarioEncontrado.senha}`);
-            alternarTelas('tela-esqueceu', 'tela-login');
+            // Dispara o e-mail em segundo plano para o e-mail cadastrado
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_email: usuarioEncontrado.email,
+                senha_usuario: usuarioEncontrado.senha
+            })
+            .then(() => {
+                alert("Verificação concluída! Se o e-mail informado estiver correto e ativo em nossa base, as instruções privadas contendo a senha de acesso já foram transmitidas para a sua caixa de entrada.");
+                alternarTelas('tela-esqueceu', 'tela-login');
+                document.getElementById('esqueceu-email').value = "";
+            })
+            .catch((err) => {
+                console.error(err);
+                alert("Erro temporário na transmissão do e-mail de segurança.");
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "Enviar Senha por E-mail";
+            });
         } else {
-            alert("Nenhum usuário encontrado com este e-mail.");
+            // Se o usuário não existir, simula um atraso falso para parecer que o e-mail foi processado (Técnica de segurança de login)
+            setTimeout(() => {
+                alert("Verificação concluída! Se o e-mail informado estiver correto e ativo em nossa base, as instruções privadas contendo a senha de acesso já foram transmitidas para a sua caixa de entrada.");
+                alternarTelas('tela-esqueceu', 'tela-login');
+                document.getElementById('esqueceu-email').value = "";
+                btn.disabled = false;
+                btn.innerText = "Enviar Senha por E-mail";
+            }, 1200);
         }
     }
 
@@ -251,7 +292,7 @@
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
         
-        hist.innerHTML = ""; // Limpa o histórico anterior antes de renderizar
+        hist.innerHTML = ""; 
         minhas.reverse().forEach(a => {
             hist.innerHTML += `<div class="item-atividade status-${a.status}"><strong>${a.tipo}</strong>: ${a.desc} (${a.status.toUpperCase()})</div>`;
         });
@@ -297,14 +338,12 @@
         let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         atvs = atvs.map(a => a.id == id ? {...a, status} : a);
         localStorage.setItem('atividades_status', JSON.stringify(atvs));
-        
-        // Correção: Atualiza os dados na tela do gestor em tempo real sem recarregar a página
         mostrarGestor(); 
     }
 
     function renderRanking() {
         const tbody = document.getElementById('tabela-ranking');
-        tbody.innerHTML = ""; // Limpa a tabela anterior antes de renderizar
+        tbody.innerHTML = ""; 
         
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
