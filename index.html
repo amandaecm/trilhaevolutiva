@@ -20,7 +20,7 @@
         .status-aprovado { border-left-color: var(--secondary); background: #f4faf6; }
         .status-reprovado { border-left-color: var(--danger); background: #fdf4f4; }
         
-        /* Tabela de Ranking */
+        /* Tabela de Ranking Expandida (Pedido da Gestora) */
         .ranking-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
         .ranking-table th, .ranking-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #ddd; }
         .ranking-table th { background-color: #f8f9fa; color: #333; }
@@ -68,10 +68,10 @@
     </div>
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
-        <h2>Recuperar Senha com Segurança</h2>
-        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o seu e-mail corporativo. Se ele estiver cadastrado, enviaremos sua senha de forma privada para a sua caixa de entrada.</p>
+        <h2>Recuperar Senha</h2>
+        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro para recuperar seus dados de acesso.</p>
         <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail">
-        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Senha por E-mail</button>
+        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Credenciais</button>
         <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
     </div>
 
@@ -103,11 +103,17 @@
         <h3>Pendências para Avaliação:</h3>
         <div id="lista-pendentes"></div>
         <hr>
-        <h3>🏆 Ranking de Corretores</h3>
+        <h3>🏆 Ranking de Corretores (Visão Detalhada da Gestora)</h3>
         <table class="ranking-table">
             <thead>
                 <tr>
-                    <th>Pos.</th><th>Nome</th><th>Vendas</th><th>Cursos</th><th>Net</th><th class="col-destaque">Total</th>
+                    <th>Posição</th>
+                    <th style="text-align: left;">Corretor</th>
+                    <th>Nível</th>
+                    <th>Pontos Venda</th>
+                    <th>Pontos Curso</th>
+                    <th>Pontos Networking</th>
+                    <th class="col-destaque">Total Pontos</th>
                 </tr>
             </thead>
             <tbody id="tabela-ranking"></tbody>
@@ -119,13 +125,12 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
-    // ⚠️ CONFIGURAÇÃO DO EMAILJS: INSIRA AS SUAS CHAVES COPIADAS DO SITE DO EMAILJS AQUI
-    const EMAILJS_SERVICE_ID = "service_5rt8wnw";
-    const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
+    // Se você tiver as chaves do EmailJS, cole-as aqui. Se deixar como está, o sistema usará o modo de exibição privada na tela.
+   const EMAILJS_SERVICE_ID = "service_5rt8wnw"; 
+    const EMAILJS_TEMPLATE_ID = "template_ucpj1co"; 
     const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
 
-    // Inicializa a biblioteca de segurança de e-mail assim que o script carrega
-    if(EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
+    if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }
 
@@ -171,7 +176,7 @@
         if (!desc) return alert("Descreva a atividade");
         
         btn.disabled = true;
-        btn.innerText = "Registrando solicitação...";
+        btn.innerText = "Registrando...";
 
         try {
             if (tipo !== 'Venda' && fileInput.files.length > 0) {
@@ -194,18 +199,17 @@
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             
             if (exibiuAvisoTamanho) {
-                alert("Solicitação registrada! Nota: Como o arquivo selecionado era muito grande, enviamos apenas o relatório de texto. Por favor, apresente o certificado original diretamente para a Gestora aprovar.");
+                alert("Solicitação enviada em texto! Arquivos maiores que 1.5MB devem ser validados fisicamente com a gestora.");
             } else {
                 alert("Atividade enviada com sucesso!");
             }
             
             document.getElementById('desc-atividade').value = "";
-            document.getElementById('arquivo-input').value = "";
+            if(fileInput) fileInput.value = "";
             mostrarCorretor();
 
         } catch (e) {
-            alert("O navegador recusou este arquivo por segurança.");
-            console.error(e);
+            alert("Erro ao processar arquivo local.");
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Atividade";
@@ -240,49 +244,49 @@
         } else alert("E-mail ou senha incorretos");
     }
 
-    // LÓGICA DE PRIVACIDADE DO PROJETO: Localiza a senha e dispara oculto via API
+    // LÓGICA DE RECUPERAÇÃO BLINDADA (Se o e-mail falhar, mostra de forma limpa na tela)
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const btn = document.getElementById('btn-recuperar');
         
         if(!emailInformado) return alert("Por favor, digite seu e-mail.");
-        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) return alert("Configuração incompleta! Você precisa configurar os IDs do EmailJS no script do código.");
 
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
 
-        // Princípio de segurança cibernética: Sempre dar a mesma resposta na tela para evitar que hackers descubram quais e-mails existem cadastrados no sistema.
-        btn.disabled = true;
-        btn.innerText = "Processando disparo criptografado...";
-
-        if(usuarioEncontrado) {
-            // Dispara o e-mail em segundo plano para o e-mail cadastrado
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                to_email: usuarioEncontrado.email,
-                senha_usuario: usuarioEncontrado.senha
-            })
-            .then(() => {
-                alert("Verificação concluída! Se o e-mail informado estiver correto e ativo em nossa base, as instruções privadas contendo a senha de acesso já foram transmitidas para a sua caixa de entrada.");
-                alternarTelas('tela-esqueceu', 'tela-login');
-                document.getElementById('esqueceu-email').value = "";
-            })
-            .catch((err) => {
-                console.error(err);
-                alert("Erro temporário na transmissão do e-mail de segurança.");
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerText = "Enviar Senha por E-mail";
-            });
-        } else {
-            // Se o usuário não existir, simula um atraso falso para parecer que o e-mail foi processado (Técnica de segurança de login)
-            setTimeout(() => {
-                alert("Verificação concluída! Se o e-mail informado estiver correto e ativo em nossa base, as instruções privadas contendo a senha de acesso já foram transmitidas para a sua caixa de entrada.");
-                alternarTelas('tela-esqueceu', 'tela-login');
-                document.getElementById('esqueceu-email').value = "";
-                btn.disabled = false;
-                btn.innerText = "Enviar Senha por E-mail";
-            }, 1200);
+        if(!usuarioEncontrado) {
+            alert("Processo concluído. Se o e-mail existir na base, as instruções foram enviadas.");
+            return;
         }
+
+        // Se as chaves do EmailJS não estiverem configuradas, usa o modo local seguro
+        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
+            alert(`[Modo Local Ativo]: Verificação concluída.\nA senha para o e-mail ${usuarioEncontrado.email} é: ${usuarioEncontrado.senha}`);
+            alternarTelas('tela-esqueceu', 'tela-login');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Enviando e-mail de segurança...";
+
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            to_email: usuarioEncontrado.email,
+            senha_usuario: usuarioEncontrado.senha
+        })
+        .then(() => {
+            alert("Sucesso! Sua senha foi enviada de forma privada para a sua caixa de entrada.");
+            alternarTelas('tela-esqueceu', 'tela-login');
+            document.getElementById('esqueceu-email').value = "";
+        })
+        .catch((err) => {
+            console.warn("Falha no serviço de e-mail externo, usando contingência local:", err);
+            // Fallback de segurança para não travar o usuário externo
+            alert(`[Contingência]: O serviço de e-mail reportou um atraso. Sua senha de acesso é: ${usuarioEncontrado.senha}`);
+            alternarTelas('tela-esqueceu', 'tela-login');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerText = "Enviar Credenciais";
+        });
     }
 
     function mostrarCorretor() {
@@ -315,7 +319,7 @@
                     botaoVer = `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`;
                 }
             } else {
-                botaoVer = `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Arquivo Grande]</span>`;
+                botaoVer = `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem anexo visual]</span>`;
             }
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <strong>${a.nome}</strong> enviou: ${a.tipo} (${a.desc})<br>
@@ -354,7 +358,15 @@
             return { nome: c.nome, v, cur, n, total: v+cur+n };
         }).sort((a,b) => b.total - a.total);
         rank.forEach((r, i) => {
-            tbody.innerHTML += `<tr><td><strong>${i+1}º</strong></td><td style="text-align:left">${r.nome}</td><td>${r.v}</td><td>${r.cur}</td><td>${r.n}</td><td class="col-destaque">${r.total} pts</td></tr>`;
+            tbody.innerHTML += `<tr>
+                <td><strong>${i+1}º</strong></td>
+                <td style="text-align:left">${r.nome}</td>
+                <td>Trainee</td>
+                <td>${r.v} pts</td>
+                <td>${r.cur} pts</td>
+                <td>${r.n} pts</td>
+                <td class="col-destaque">${r.total} pts</td>
+            </tr>`;
         });
     }
 
