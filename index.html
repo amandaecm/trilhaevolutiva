@@ -77,7 +77,29 @@
 
     <div id="painel-corretor" class="card hidden">
         <h2>Painel do Corretor</h2>
-        <div class="perfil-info">Olá, <strong id="nome-user"></strong>! Acompanhe seu progresso.</div>
+     <div class="perfil-info">
+    <p style="margin: 0; font-size: 1.2em;">Olá, <strong id="nome-user">Amanda Elaine</strong>! Acompanhe seu progresso.</p>
+    
+    <div style="margin-top: 15px; background: #ddd; border-radius: 10px; padding: 2px; position: relative;">
+        <div id="barra-progresso" style="background: var(--secondary); height: 15px; width: 33%; border-radius: 8px; transition: 0.5s;"></div>
+    </div>
+    <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #555;">Você está no nível <span class="badge" id="nivel-user">Trainee</span> (100 pts). Faltam 200 pts para o nível Júnior!</p>
+
+    <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <span style="font-size: 0.8em; color: gray; display: block;">Minhas Vendas</span>
+            <strong style="color: var(--secondary); font-size: 1.2em;">1</strong>
+        </div>
+        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <span style="font-size: 0.8em; color: gray; display: block;">Meus Cursos</span>
+            <strong style="color: var(--accent); font-size: 1.2em;">2</strong>
+        </div>
+        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <span style="font-size: 0.8em; color: gray; display: block;">Sua Posição</span>
+            <strong style="color: var(--primary); font-size: 1.2em;">1º</strong>
+        </div>
+    </div>
+</div>
         
         <select id="tipo-atividade" onchange="toggleUpload()">
             <option value="Venda">Venda (Bougainville/Florença)</option>
