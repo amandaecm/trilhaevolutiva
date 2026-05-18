@@ -31,6 +31,7 @@
         .btn-ver { background: var(--accent); }
         .perfil-info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
         .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
+        .label-seguranca { color: var(--danger); font-weight: bold; font-size: 0.85em; }
     </style>
 </head>
 <body>
@@ -50,11 +51,18 @@
         <input type="text" id="cad-nome" placeholder="Nome Completo">
         <input type="email" id="cad-email" placeholder="E-mail">
         <input type="password" id="cad-senha" placeholder="Senha">
+        
+        <label>Seu Cargo:</label>
         <select id="cad-cargo">
             <option value="corretor">Corretor (Consultor)</option>
             <option value="gestor">Gestor (Gerente Comercial)</option>
         </select>
-        <button onclick="realizarCadastro()" style="background: var(--secondary);">Cadastrar</button>
+        
+        <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+        <label class="label-seguranca">🔒 Segurança do Grupo Status:</label>
+        <input type="password" id="cad-chave-empresa" placeholder="Digite a Chave de Acesso da Construtora">
+        
+        <button onclick="realizarCadastro()" style="background: var(--secondary);">Validar e Cadastrar</button>
         <div class="link-alternar" onclick="alternarTelas('tela-cadastro', 'tela-login')" style="color: var(--danger);">Voltar para o Login</div>
     </div>
 
@@ -108,6 +116,10 @@
     </div>
 
 <script>
+    // --- DIRETRIZ DE SEGURANÇA MASTER ---
+    // Altere o texto abaixo para definir a senha secreta que os corretores devem usar ao cadastrar
+    const CHAVE_STATUS_OFICIAL = "Status2026";
+
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
@@ -121,7 +133,6 @@
         document.getElementById('campo-upload').className = (t === 'Venda') ? 'hidden' : '';
     }
 
-    // Upload seguro para nuvem estável do Imgur
     async function enviarParaServidorExterno(file) {
         const formData = new FormData();
         formData.append("image", file);
@@ -166,7 +177,7 @@
             alert("Atividade enviada com sucesso!");
             location.reload();
         } catch (e) {
-            alert("Erro ao processar imagem. Verifique sua conexão ou tente uma imagem menor.");
+            alert("Erro ao processar imagem. Verifique sua conexão.");
             console.error(e);
         } finally {
             btn.disabled = false;
@@ -174,17 +185,30 @@
         }
     }
 
-    // --- LÓGICA DE CADASTRO, LOGIN E RECUPERAÇÃO ---
+    // --- CADASTRO COM TRAVA DE SEGURANÇA ---
     function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
         const s = document.getElementById('cad-senha').value;
         const c = document.getElementById('cad-cargo').value;
-        if(!n || !e || !s) return alert("Preencha todos os campos!");
+        const chaveDigitada = document.getElementById('cad-chave-empresa').value;
+
+        if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
+        
+        // Validação da Chave Secreta Comercial
+        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) {
+            alert("Chave de Acesso da Construtora incorreta! Você não tem autorização para criar uma conta.");
+            return;
+        }
+
+        if(listaUsuarios.some(user => user.email === e)) {
+            alert("Este e-mail já está registrado no sistema.");
+            return;
+        }
         
         listaUsuarios.push({ nome: n, email: e, senha: s, cargo: c });
         localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
-        alert("Cadastrado com sucesso!"); 
+        alert("Conta criada com absoluto sucesso!"); 
         location.reload();
     }
 
@@ -199,8 +223,7 @@
         } else alert("E-mail ou senha incorretos");
     }
 
-    // NOVA FUNÇÃO: Varre os usuários do localstorage em busca da senha correspondente
-    function ejecutarEsqueceuSenha() {
+    function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         if(!emailInformado) return alert("Por favor, digite seu e-mail.");
 
@@ -211,11 +234,11 @@
             alternarTelas('tela-esqueceu', 'tela-login');
             document.getElementById('esqueceu-email').value = "";
         } else {
-            alert("Nenhum usuário encontrado com este e-mail em nosso sistema.");
+            alert("Nenhum usuário encontrado com este e-mail.");
         }
     }
 
-    // --- EXIBIÇÃO DE PAINÉIS ---
+    // --- COMPONENTES DE EXIBIÇÃO ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
