@@ -69,9 +69,9 @@
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
         <h2>Recuperar Senha</h2>
-        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro para recuperar seus dados de acesso.</p>
+        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro. Se ele existir na base, enviaremos as instruções de recuperação.</p>
         <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail">
-        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Credenciais</button>
+        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Solicitação</button>
         <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
     </div>
 
@@ -125,12 +125,12 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
-    // Se você tiver as chaves do EmailJS, cole-as aqui. Se deixar como está, o sistema usará o modo de exibição privada na tela.
-   const EMAILJS_SERVICE_ID = "service_5rt8wnw"; 
-    const EMAILJS_TEMPLATE_ID = "template_ucpj1co"; 
+    // ⚠️ CONFIGURAÇÃO DO EMAILJS: COLE AS SUAS CHAVES DO EMAILJS AQUI SE DESEJAR USAR O DISPARO DE E-MAIL REAL
+    const EMAILJS_SERVICE_ID = "service_5rt8wnw";
+    const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
     const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
 
-    if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
+    if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "WCFWMOoQC6Odaod_8") {
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }
 
@@ -244,7 +244,7 @@
         } else alert("E-mail ou senha incorretos");
     }
 
-    // LÓGICA DE RECUPERAÇÃO BLINDADA (Se o e-mail falhar, mostra de forma limpa na tela)
+    // LÓGICA DE RECUPERAÇÃO BLINDADA E 100% SECRETA
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const btn = document.getElementById('btn-recuperar');
@@ -253,40 +253,56 @@
 
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
 
-        if(!usuarioEncontrado) {
-            alert("Processo concluído. Se o e-mail existir na base, as instruções foram enviadas.");
-            return;
-        }
-
-        // Se as chaves do EmailJS não estiverem configuradas, usa o modo local seguro
-        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
-            alert(`[Modo Local Ativo]: Verificação concluída.\nA senha para o e-mail ${usuarioEncontrado.email} é: ${usuarioEncontrado.senha}`);
-            alternarTelas('tela-esqueceu', 'tela-login');
-            return;
-        }
+        // Mensagem padrão de segurança preventiva
+        const mensagemSucessoPadrao = "Se o e-mail informado estiver cadastrado em nossa base corporativa, as instruções privadas de recuperação foram transmitidas para a sua caixa de entrada.";
 
         btn.disabled = true;
-        btn.innerText = "Enviando e-mail de segurança...";
+        btn.innerText = "Processando requisição de segurança...";
 
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-            to_email: usuarioEncontrado.email,
-            senha_usuario: usuarioEncontrado.senha
-        })
-        .then(() => {
-            alert("Sucesso! Sua senha foi enviada de forma privada para a sua caixa de entrada.");
-            alternarTelas('tela-esqueceu', 'tela-login');
-            document.getElementById('esqueceu-email').value = "";
-        })
-        .catch((err) => {
-            console.warn("Falha no serviço de e-mail externo, usando contingência local:", err);
-            // Fallback de segurança para não travar o usuário externo
-            alert(`[Contingência]: O serviço de e-mail reportou um atraso. Sua senha de acesso é: ${usuarioEncontrado.senha}`);
-            alternarTelas('tela-esqueceu', 'tela-login');
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerText = "Enviar Credenciais";
-        });
+        // Se o EmailJS NÃO estiver configurado com os tokens reais da sua conta:
+        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
+            setTimeout(() => {
+                // AVISO FICTÍCIO SEGURO: Não exibe a senha e instrui o usuário a falar com o suporte/gestora
+                alert("O serviço automatizado de envio externo não está ativado para este domínio. Por favor, solicite a redefinição manual diretamente à Gestora Comercial.");
+                alternarTelas('tela-esqueceu', 'tela-login');
+                document.getElementById('esqueceu-email').value = "";
+                btn.disabled = false;
+                btn.innerText = "Enviar Credenciais";
+            }, 1000);
+            return;
+        }
+
+        // Se as chaves reais estiverem configuradas, o sistema tenta o envio real
+        if(usuarioEncontrado) {
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                to_email: usuarioEncontrado.email,
+                senha_usuario: usuarioEncontrado.senha
+            })
+            .then(() => {
+                alert(mensagemSucessoPadrao);
+                alternarTelas('tela-esqueceu', 'tela-login');
+                document.getElementById('esqueceu-email').value = "";
+            })
+            .catch((err) => {
+                console.error("Falha no serviço:", err);
+                // PROTEÇÃO MÁXIMA: Se falhar o envio, orienta o suporte em vez de expor os dados
+                alert("Ocorreu uma instabilidade na comunicação com o servidor de e-mail. Por favor, solicite seu acesso diretamente à Gestora Comercial do Grupo Status.");
+                alternarTelas('tela-esqueceu', 'tela-login');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "Enviar Credenciais";
+            });
+        } else {
+            // Se o e-mail não existir, simula um tempo de carregamento antes de dar a resposta padrão (Evita varredura de hackers)
+            setTimeout(() => {
+                alert(mensagemSucessoPadrao);
+                alternarTelas('tela-esqueceu', 'tela-login');
+                document.getElementById('esqueceu-email').value = "";
+                btn.disabled = false;
+                btn.innerText = "Enviar Credenciais";
+            }, 1200);
+        }
     }
 
     function mostrarCorretor() {
