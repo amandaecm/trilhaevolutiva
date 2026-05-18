@@ -121,6 +121,16 @@
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
+    // Função executada automaticamente ao carregar a página
+    window.onload = function() {
+        const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
+        if (usuarioSalvo) {
+            usuarioLogado = JSON.parse(usuarioSalvo);
+            document.getElementById('tela-login').classList.add('hidden');
+            usuarioLogado.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
+        }
+    };
+
     function alternarTelas(esc, mos) {
         document.getElementById(esc).classList.add('hidden');
         document.getElementById(mos).classList.remove('hidden');
@@ -131,7 +141,6 @@
         document.getElementById('campo-upload').className = (t === 'Venda') ? 'hidden' : '';
     }
 
-    // Leitor direto Base64 ultrarápido (Evita estouro de memória RAM do navegador)
     function lerArquivoDireto(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -157,8 +166,6 @@
         try {
             if (tipo !== 'Venda' && fileInput.files.length > 0) {
                 const arquivoOriginal = fileInput.files;
-                
-                // Se o arquivo for menor que 1.5MB, guardamos a cópia visual normalmente
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -182,9 +189,13 @@
                 alert("Atividade enviada com sucesso!");
             }
             
-            location.reload();
+            // Correção: Limpa os campos e atualiza a tela sem deslogar
+            document.getElementById('desc-atividade').value = "";
+            document.getElementById('arquivo-input').value = "";
+            mostrarCorretor();
+
         } catch (e) {
-            alert("O navegador recusou este arquivo por segurança. Tente tirar um print da tela (captura) e enviar o print.");
+            alert("O navegador recusou este arquivo por segurança.");
             console.error(e);
         } finally {
             btn.disabled = false;
@@ -192,7 +203,6 @@
         }
     }
 
-    // --- CADASTRO, LOGIN E RECUPERAÇÃO ---
     function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
@@ -206,7 +216,7 @@
         listaUsuarios.push({ nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value });
         localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
         alert("Conta criada com sucesso!"); 
-        location.reload();
+        alternarTelas('tela-cadastro', 'tela-login');
     }
 
     function fazerLogin() {
@@ -215,6 +225,8 @@
         const u = listaUsuarios.find(user => user.email === e && user.senha === s);
         if (u) {
             usuarioLogado = u;
+            // Salva a sessão para não perder o login ao atualizar
+            sessionStorage.setItem('usuario_logado_status', JSON.stringify(u));
             document.getElementById('tela-login').classList.add('hidden');
             u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
         } else alert("E-mail ou senha incorretos");
@@ -232,13 +244,14 @@
         }
     }
 
-    // --- COMPONENTES DE EXIBIÇÃO ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
+        
+        hist.innerHTML = ""; // Limpa o histórico anterior antes de renderizar
         minhas.reverse().forEach(a => {
             hist.innerHTML += `<div class="item-atividade status-${a.status}"><strong>${a.tipo}</strong>: ${a.desc} (${a.status.toUpperCase()})</div>`;
         });
@@ -261,7 +274,7 @@
                     botaoVer = `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`;
                 }
             } else {
-                botaoVer = `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Arquivo Grande - Verificar Manualmente]</span>`;
+                botaoVer = `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Arquivo Grande]</span>`;
             }
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <strong>${a.nome}</strong> enviou: ${a.tipo} (${a.desc})<br>
@@ -284,11 +297,15 @@
         let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         atvs = atvs.map(a => a.id == id ? {...a, status} : a);
         localStorage.setItem('atividades_status', JSON.stringify(atvs));
-        location.reload();
+        
+        // Correção: Atualiza os dados na tela do gestor em tempo real sem recarregar a página
+        mostrarGestor(); 
     }
 
     function renderRanking() {
         const tbody = document.getElementById('tabela-ranking');
+        tbody.innerHTML = ""; // Limpa a tabela anterior antes de renderizar
+        
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
             let v=0, cur=0, n=0;
@@ -302,7 +319,10 @@
         });
     }
 
-    function logout() { location.reload(); }
+    function logout() { 
+        sessionStorage.removeItem('usuario_logado_status');
+        window.location.reload(); 
+    }
 </script>
 </body>
 </html>
