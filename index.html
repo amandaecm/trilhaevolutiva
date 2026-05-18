@@ -131,31 +131,12 @@
         document.getElementById('campo-upload').className = (t === 'Venda') ? 'hidden' : '';
     }
 
-    // Processamento local de imagem com compressão agressiva e estável (Sem APIs externas)
-    function processarArquivoLocal(file) {
+    // Leitor direto Base64 ultrarápido (Evita estouro de memória RAM do navegador)
+    function lerArquivoDireto(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                if (file.type === "application/pdf") {
-                    // PDFs são mantidos em texto Base64 simples
-                    resolve(event.target.result); 
-                } else {
-                    // Imagens de celular são reduzidas para caber perfeitamente na memória
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const maxW = 600; // Otimização ideal para telas web
-                        const scale = maxW / img.width;
-                        canvas.width = maxW;
-                        canvas.height = img.height * scale;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.5)); // Qualidade comprimida inteligente
-                    };
-                };
-            };
+            reader.onload = (event) => resolve(event.target.result);
             reader.onerror = e => reject(e);
         });
     }
@@ -165,16 +146,24 @@
         const tipo = document.getElementById('tipo-atividade').value;
         const desc = document.getElementById('desc-atividade').value;
         const fileInput = document.getElementById('arquivo-input');
-        let arquivoOtimizado = null;
+        let arquivoBase64 = null;
+        let exibiuAvisoTamanho = false;
 
         if (!desc) return alert("Descreva a atividade");
         
         btn.disabled = true;
-        btn.innerText = "Compactando e gravando...";
+        btn.innerText = "Registrando solicitação...";
 
         try {
             if (tipo !== 'Venda' && fileInput.files.length > 0) {
-                arquivoOtimizado = await processarArquivoLocal(fileInput.files);
+                const arquivoOriginal = fileInput.files;
+                
+                // Se o arquivo for menor que 1.5MB, guardamos a cópia visual normalmente
+                if (arquivoOriginal.size <= 1572864) {
+                    arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
+                } else {
+                    exibiuAvisoTamanho = true;
+                }
             }
 
             let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
@@ -182,14 +171,20 @@
                 id: Date.now(),
                 email: usuarioLogado.email,
                 nome: usuarioLogado.nome,
-                tipo, desc, status: 'pendente', arquivo: arquivoOtimizado
+                tipo, desc, status: 'pendente', arquivo: arquivoBase64
             });
 
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
-            alert("Atividade enviada com sucesso!");
+            
+            if (exibiuAvisoTamanho) {
+                alert("Solicitação registrada! Nota: Como o arquivo selecionado era muito grande, enviamos apenas o relatório de texto. Por favor, apresente o certificado original diretamente para a Gestora aprovar.");
+            } else {
+                alert("Atividade enviada com sucesso!");
+            }
+            
             location.reload();
         } catch (e) {
-            alert("Erro ao ler arquivo local. Tente um arquivo menor ou um print em JPG.");
+            alert("O navegador recusou este arquivo por segurança. Tente tirar um print da tela (captura) e enviar o print.");
             console.error(e);
         } finally {
             btn.disabled = false;
@@ -265,6 +260,8 @@
                 } else {
                     botaoVer = `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`;
                 }
+            } else {
+                botaoVer = `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Arquivo Grande - Verificar Manualmente]</span>`;
             }
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <strong>${a.nome}</strong> enviou: ${a.tipo} (${a.desc})<br>
