@@ -30,18 +30,19 @@
         .btn-reprovar { background: var(--danger); }
         .btn-ver { background: var(--accent); }
         .perfil-info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
     </style>
 </head>
 <body>
 
     <div id="tela-login" class="card" style="max-width: 450px;">
-        <h2 style="text-align: center;">Grupo Status - Login</h2>
+        <h2 style="text-align: center; color: var(--primary);">Grupo Status - Login</h2>
         <input type="email" id="login-email" placeholder="E-mail">
         <input type="password" id="login-senha" placeholder="Senha">
         <button onclick="fazerLogin()">Entrar</button>
-        <button onclick="alternarTelas('tela-login', 'tela-cadastro')" style="background:none; color:var(--accent); margin-top:10px; border:none;">Cadastre-se aqui</button>
-        <hr>
-        <button onclick="limparBanco()" style="background:none; color:gray; font-size: 10px; border:none; cursor:pointer;">⚠️ Limpar Banco de Dados (Reset)</button>
+        
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')" style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
 
     <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
@@ -54,7 +55,15 @@
             <option value="gestor">Gestor (Gerente Comercial)</option>
         </select>
         <button onclick="realizarCadastro()" style="background: var(--secondary);">Cadastrar</button>
-        <button onclick="alternarTelas('tela-cadastro', 'tela-login')" style="background:none; color:var(--danger); border:none;">Voltar</button>
+        <div class="link-alternar" onclick="alternarTelas('tela-cadastro', 'tela-login')" style="color: var(--danger);">Voltar para o Login</div>
+    </div>
+
+    <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
+        <h2>Recuperar Senha</h2>
+        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro para recuperar seus dados de acesso.</p>
+        <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail">
+        <button onclick="executarEsqueceuSenha()" style="background: var(--primary);">Consultar Credenciais</button>
+        <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
     </div>
 
     <div id="painel-corretor" class="card hidden">
@@ -112,24 +121,20 @@
         document.getElementById('campo-upload').className = (t === 'Venda') ? 'hidden' : '';
     }
 
-    // Função de upload direto e gratuito para nuvem estável (Sem Power Automate)
+    // Upload seguro para nuvem estável do Imgur
     async function enviarParaServidorExterno(file) {
         const formData = new FormData();
         formData.append("image", file);
 
-        // Usamos uma API anônima do Imgur para guardar a imagem e gerar um link público curto de texto
         const resposta = await fetch("https://api.imgur.com/3/image", {
             method: "POST",
-            headers: { Authorization: "Client-ID 124cbf5e4b998cf" }, // Client-ID público para uploads temporários
+            headers: { Authorization: "Client-ID 124cbf5e4b998cf" },
             body: formData
         });
         
         const dados = await resposta.json();
-        if (dados.success) {
-            return dados.data.link; // Devolve apenas o link em texto (Saves space!)
-        } else {
-            throw new Error("Falha no upload");
-        }
+        if (dados.success) return dados.data.link;
+        throw new Error("Falha no upload");
     }
 
     async function cadastrarAtividade() {
@@ -146,7 +151,6 @@
 
         try {
             if (tipo !== 'Venda' && fileInput.files.length > 0) {
-                // Envia o arquivo pesado para a internet e pega só o link de texto curto
                 urlLinkArquivo = await enviarParaServidorExterno(fileInput.files);
             }
 
@@ -170,7 +174,7 @@
         }
     }
 
-    // --- LÓGICA DE LOGIN E SISTEMA ---
+    // --- LÓGICA DE CADASTRO, LOGIN E RECUPERAÇÃO ---
     function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
@@ -195,6 +199,23 @@
         } else alert("E-mail ou senha incorretos");
     }
 
+    // NOVA FUNÇÃO: Varre os usuários do localstorage em busca da senha correspondente
+    function ejecutarEsqueceuSenha() {
+        const emailInformado = document.getElementById('esqueceu-email').value.trim();
+        if(!emailInformado) return alert("Por favor, digite seu e-mail.");
+
+        const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
+
+        if(usuarioEncontrado) {
+            alert(`Sua senha cadastrada é: ${usuarioEncontrado.senha}`);
+            alternarTelas('tela-esqueceu', 'tela-login');
+            document.getElementById('esqueceu-email').value = "";
+        } else {
+            alert("Nenhum usuário encontrado com este e-mail em nosso sistema.");
+        }
+    }
+
+    // --- EXIBIÇÃO DE PAINÉIS ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
@@ -247,7 +268,6 @@
         });
     }
 
-    function limparBanco() { if(confirm("Aviso: Isso apagará os dados locais criados nos testes anteriores. Deseja prosseguir?")) { localStorage.clear(); location.reload(); } }
     function logout() { location.reload(); }
 </script>
 </body>
