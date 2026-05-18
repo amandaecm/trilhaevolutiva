@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Evolução - Grupo Status</title>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .card { background: white; max-width: 950px; margin: 20px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+        
+        /* Estilos de Atividades */
+        .item-atividade { padding: 15px; margin-bottom: 10px; border-radius: 4px; border-left: 5px solid #ccc; background: #fdfdfd; }
+        .status-pendente { border-left-color: var(--warning); background: #fffdf0; }
+        .status-aprovado { border-left-color: var(--secondary); background: #f4faf6; }
+        .status-reprovado { border-left-color: var(--danger); background: #fdf4f4; }
+        
+        /* Tabela de Ranking */
+        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
+        .ranking-table th, .ranking-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #ddd; }
+        .ranking-table th { background-color: #f8f9fa; color: #333; }
+        .col-destaque { font-weight: bold; color: var(--primary); background-color: #f0f7ff; }
+        
+        .btn-controle { width: auto; padding: 8px 15px; margin-right: 5px; font-size: 0.85em; }
+        .btn-aprovar { background: var(--secondary); }
+        .btn-reprovar { background: var(--danger); }
+        .btn-ver { background: var(--accent); }
+        .perfil-info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="tela-login" class="card" style="max-width: 450px;">
+        <h2 style="text-align: center;">Grupo Status - Login</h2>
+        <input type="email" id="login-email" placeholder="E-mail">
+        <input type="password" id="login-senha" placeholder="Senha">
+        <button onclick="fazerLogin()">Entrar</button>
+        <button onclick="alternarTelas('tela-login', 'tela-cadastro')" style="background:none; color:var(--accent); margin-top:10px; border:none;">Cadastre-se aqui</button>
+        <hr>
+        <button onclick="limparBanco()" style="background:none; color:gray; font-size: 10px; border:none; cursor:pointer;">⚠️ Limpar Banco de Dados (Reset)</button>
+    </div>
+
+    <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
+        <h2>Nova Conta</h2>
+        <input type="text" id="cad-nome" placeholder="Nome Completo">
+        <input type="email" id="cad-email" placeholder="E-mail">
+        <input type="password" id="cad-senha" placeholder="Senha">
+        <select id="cad-cargo">
+            <option value="corretor">Corretor (Consultor)</option>
+            <option value="gestor">Gestor (Gerente Comercial)</option>
+        </select>
+        <button onclick="realizarCadastro()" style="background: var(--secondary);">Cadastrar</button>
+        <button onclick="alternarTelas('tela-cadastro', 'tela-login')" style="background:none; color:var(--danger); border:none;">Voltar</button>
+    </div>
+
+    <div id="painel-corretor" class="card hidden">
+        <h2>Painel do Corretor</h2>
+        <div class="perfil-info">Olá, <strong id="nome-user"></strong>! Acompanhe seu progresso.</div>
+        
+        <select id="tipo-atividade" onchange="toggleUpload()">
+            <option value="Venda">Venda (Bougainville/Florença)</option>
+            <option value="Curso">Curso (Certificado)</option>
+            <option value="Evento">Networking (Foto)</option>
+        </select>
+        <input type="text" id="desc-atividade" placeholder="Descrição (Ex: Lote A-12 ou Nome do Curso)">
+        
+        <div id="campo-upload" class="hidden">
+            <label>Anexar Comprovante (Imagem ou PDF):</label>
+            <input type="file" id="arquivo-input" accept="image/*,.pdf">
+        </div>
+
+        <button id="btn-enviar" onclick="cadastrarAtividade()" style="background: var(--accent); margin-top:15px;">Enviar Atividade</button>
+        <hr>
+        <h3>Seu Histórico de Solicitações</h3>
+        <div id="historico-corretor"></div>
+        <button onclick="logout()" style="background: var(--danger); width: 100px;">Sair</button>
+    </div>
+
+    <div id="painel-gestor" class="card hidden">
+        <h2>Gestão Comercial - Grupo Status</h2>
+        <h3>Pendências para Avaliação:</h3>
+        <div id="lista-pendentes"></div>
+        <hr>
+        <h3>🏆 Ranking de Corretores</h3>
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>Pos.</th><th>Nome</th><th>Vendas</th><th>Cursos</th><th>Net</th><th class="col-destaque">Total</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-ranking"></tbody>
+        </table>
+        <br>
+        <button onclick="logout()" style="background: var(--danger); width: 100px;">Sair</button>
+    </div>
+
+<script>
+    let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
+    let usuarioLogado = null;
+
+    function alternarTelas(esc, mos) {
+        document.getElementById(esc).classList.add('hidden');
+        document.getElementById(mos).classList.remove('hidden');
+    }
+
+    function toggleUpload() {
+        const t = document.getElementById('tipo-atividade').value;
+        document.getElementById('campo-upload').className = (t === 'Venda') ? 'hidden' : '';
+    }
+
+    // Função de upload direto e gratuito para nuvem estável (Sem Power Automate)
+    async function enviarParaServidorExterno(file) {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        // Usamos uma API anônima do Imgur para guardar a imagem e gerar um link público curto de texto
+        const resposta = await fetch("https://api.imgur.com/3/image", {
+            method: "POST",
+            headers: { Authorization: "Client-ID 124cbf5e4b998cf" }, // Client-ID público para uploads temporários
+            body: formData
+        });
+        
+        const dados = await resposta.json();
+        if (dados.success) {
+            return dados.data.link; // Devolve apenas o link em texto (Saves space!)
+        } else {
+            throw new Error("Falha no upload");
+        }
+    }
+
+    async function cadastrarAtividade() {
+        const btn = document.getElementById('btn-enviar');
+        const tipo = document.getElementById('tipo-atividade').value;
+        const desc = document.getElementById('desc-atividade').value;
+        const fileInput = document.getElementById('arquivo-input');
+        let urlLinkArquivo = null;
+
+        if (!desc) return alert("Descreva a atividade");
+        
+        btn.disabled = true;
+        btn.innerText = "Enviando arquivo para nuvem segura...";
+
+        try {
+            if (tipo !== 'Venda' && fileInput.files.length > 0) {
+                // Envia o arquivo pesado para a internet e pega só o link de texto curto
+                urlLinkArquivo = await enviarParaServidorExterno(fileInput.files);
+            }
+
+            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+            atvs.push({
+                id: Date.now(),
+                email: usuarioLogado.email,
+                nome: usuarioLogado.nome,
+                tipo, desc, status: 'pendente', arquivo: urlLinkArquivo
+            });
+
+            localStorage.setItem('atividades_status', JSON.stringify(atvs));
+            alert("Atividade enviada com sucesso!");
+            location.reload();
+        } catch (e) {
+            alert("Erro ao processar imagem. Verifique sua conexão ou tente uma imagem menor.");
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Enviar Atividade";
+        }
+    }
+
+    // --- LÓGICA DE LOGIN E SISTEMA ---
+    function realizarCadastro() {
+        const n = document.getElementById('cad-nome').value.trim();
+        const e = document.getElementById('cad-email').value.trim();
+        const s = document.getElementById('cad-senha').value;
+        const c = document.getElementById('cad-cargo').value;
+        if(!n || !e || !s) return alert("Preencha todos os campos!");
+        
+        listaUsuarios.push({ nome: n, email: e, senha: s, cargo: c });
+        localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
+        alert("Cadastrado com sucesso!"); 
+        location.reload();
+    }
+
+    function fazerLogin() {
+        const e = document.getElementById('login-email').value.trim();
+        const s = document.getElementById('login-senha').value;
+        const u = listaUsuarios.find(user => user.email === e && user.senha === s);
+        if (u) {
+            usuarioLogado = u;
+            document.getElementById('tela-login').classList.add('hidden');
+            u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
+        } else alert("E-mail ou senha incorretos");
+    }
+
+    function mostrarCorretor() {
+        document.getElementById('painel-corretor').classList.remove('hidden');
+        document.getElementById('nome-user').innerText = usuarioLogado.nome;
+        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+        const minhas = atvs.filter(a => a.email === usuarioLogado.email);
+        const hist = document.getElementById('historico-corretor');
+        minhas.reverse().forEach(a => {
+            hist.innerHTML += `<div class="item-atividade status-${a.status}"><strong>${a.tipo}</strong>: ${a.desc} (${a.status.toUpperCase()})</div>`;
+        });
+    }
+
+    function mostrarGestor() {
+        document.getElementById('painel-gestor').classList.remove('hidden');
+        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+        const pend = atvs.filter(a => a.status === 'pendente');
+        const lista = document.getElementById('lista-pendentes');
+        
+        lista.innerHTML = pend.length === 0 ? "<p>Nenhuma pendência aguardando avaliação.</p>" : "";
+        
+        pend.forEach(a => {
+            lista.innerHTML += `<div class="item-atividade status-pendente">
+                <strong>${a.nome}</strong> enviou: ${a.tipo} (${a.desc})<br>
+                ${a.arquivo ? `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Abrir Comprovante</button>` : ''}
+                <button class="btn-controle btn-aprovar" onclick="decidir('${a.id}', 'aprovado')">Aprovar</button>
+                <button class="btn-controle btn-reprovar" onclick="decidir('${a.id}', 'reprovado')">Reprovar</button>
+            </div>`;
+        });
+        renderRanking();
+    }
+
+    function decidir(id, status) {
+        let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+        atvs = atvs.map(a => a.id == id ? {...a, status} : a);
+        localStorage.setItem('atividades_status', JSON.stringify(atvs));
+        location.reload();
+    }
+
+    function renderRanking() {
+        const tbody = document.getElementById('tabela-ranking');
+        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+        let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
+            let v=0, cur=0, n=0;
+            atvs.filter(a => a.email === c.email && a.status === 'aprovado').forEach(a => {
+                if(a.tipo === 'Venda') v+=100; else if(a.tipo === 'Curso') cur+=50; else n+=20;
+            });
+            return { nome: c.nome, v, cur, n, total: v+cur+n };
+        }).sort((a,b) => b.total - a.total);
+        rank.forEach((r, i) => {
+            tbody.innerHTML += `<tr><td><strong>${i+1}º</strong></td><td style="text-align:left">${r.nome}</td><td>${r.v}</td><td>${r.cur}</td><td>${r.n}</td><td class="col-destaque">${r.total} pts</td></tr>`;
+        });
+    }
+
+    function limparBanco() { if(confirm("Aviso: Isso apagará os dados locais criados nos testes anteriores. Deseja prosseguir?")) { localStorage.clear(); location.reload(); } }
+    function logout() { location.reload(); }
+</script>
+</body>
+</html>
