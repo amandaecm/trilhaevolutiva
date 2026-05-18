@@ -116,8 +116,6 @@
     </div>
 
 <script>
-    // --- DIRETRIZ DE SEGURANÇA MASTER ---
-    // Altere o texto abaixo para definir a senha secreta que os corretores devem usar ao cadastrar
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
@@ -133,19 +131,33 @@
         document.getElementById('campo-upload').className = (t === 'Venda') ? 'hidden' : '';
     }
 
-    async function enviarParaServidorExterno(file) {
-        const formData = new FormData();
-        formData.append("image", file);
-
-        const resposta = await fetch("https://api.imgur.com/3/image", {
-            method: "POST",
-            headers: { Authorization: "Client-ID 124cbf5e4b998cf" },
-            body: formData
+    // Processamento local de imagem com compressão agressiva e estável (Sem APIs externas)
+    function processarArquivoLocal(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                if (file.type === "application/pdf") {
+                    // PDFs são mantidos em texto Base64 simples
+                    resolve(event.target.result); 
+                } else {
+                    // Imagens de celular são reduzidas para caber perfeitamente na memória
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const maxW = 600; // Otimização ideal para telas web
+                        const scale = maxW / img.width;
+                        canvas.width = maxW;
+                        canvas.height = img.height * scale;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.5)); // Qualidade comprimida inteligente
+                    };
+                };
+            };
+            reader.onerror = e => reject(e);
         });
-        
-        const dados = await resposta.json();
-        if (dados.success) return dados.data.link;
-        throw new Error("Falha no upload");
     }
 
     async function cadastrarAtividade() {
@@ -153,16 +165,16 @@
         const tipo = document.getElementById('tipo-atividade').value;
         const desc = document.getElementById('desc-atividade').value;
         const fileInput = document.getElementById('arquivo-input');
-        let urlLinkArquivo = null;
+        let arquivoOtimizado = null;
 
         if (!desc) return alert("Descreva a atividade");
         
         btn.disabled = true;
-        btn.innerText = "Enviando arquivo para nuvem segura...";
+        btn.innerText = "Compactando e gravando...";
 
         try {
             if (tipo !== 'Venda' && fileInput.files.length > 0) {
-                urlLinkArquivo = await enviarParaServidorExterno(fileInput.files);
+                arquivoOtimizado = await processarArquivoLocal(fileInput.files);
             }
 
             let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
@@ -170,14 +182,14 @@
                 id: Date.now(),
                 email: usuarioLogado.email,
                 nome: usuarioLogado.nome,
-                tipo, desc, status: 'pendente', arquivo: urlLinkArquivo
+                tipo, desc, status: 'pendente', arquivo: arquivoOtimizado
             });
 
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             alert("Atividade enviada com sucesso!");
             location.reload();
         } catch (e) {
-            alert("Erro ao processar imagem. Verifique sua conexão.");
+            alert("Erro ao ler arquivo local. Tente um arquivo menor ou um print em JPG.");
             console.error(e);
         } finally {
             btn.disabled = false;
@@ -185,30 +197,20 @@
         }
     }
 
-    // --- CADASTRO COM TRAVA DE SEGURANÇA ---
+    // --- CADASTRO, LOGIN E RECUPERAÇÃO ---
     function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
         const s = document.getElementById('cad-senha').value;
-        const c = document.getElementById('cad-cargo').value;
         const chaveDigitada = document.getElementById('cad-chave-empresa').value;
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
+        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave de Acesso da Construtora incorreta!");
+        if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já está registrado.");
         
-        // Validação da Chave Secreta Comercial
-        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) {
-            alert("Chave de Acesso da Construtora incorreta! Você não tem autorização para criar uma conta.");
-            return;
-        }
-
-        if(listaUsuarios.some(user => user.email === e)) {
-            alert("Este e-mail já está registrado no sistema.");
-            return;
-        }
-        
-        listaUsuarios.push({ nome: n, email: e, senha: s, cargo: c });
+        listaUsuarios.push({ nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value });
         localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
-        alert("Conta criada com absoluto sucesso!"); 
+        alert("Conta criada com sucesso!"); 
         location.reload();
     }
 
@@ -226,13 +228,10 @@
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         if(!emailInformado) return alert("Por favor, digite seu e-mail.");
-
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
-
         if(usuarioEncontrado) {
             alert(`Sua senha cadastrada é: ${usuarioEncontrado.senha}`);
             alternarTelas('tela-esqueceu', 'tela-login');
-            document.getElementById('esqueceu-email').value = "";
         } else {
             alert("Nenhum usuário encontrado com este e-mail.");
         }
@@ -259,14 +258,29 @@
         lista.innerHTML = pend.length === 0 ? "<p>Nenhuma pendência aguardando avaliação.</p>" : "";
         
         pend.forEach(a => {
+            let botaoVer = "";
+            if (a.arquivo) {
+                if (a.arquivo.startsWith("data:application/pdf")) {
+                    botaoVer = `<button class="btn-controle btn-ver" onclick="abrirPdfJanela('${a.id}')">Ver PDF</button>`;
+                } else {
+                    botaoVer = `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`;
+                }
+            }
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <strong>${a.nome}</strong> enviou: ${a.tipo} (${a.desc})<br>
-                ${a.arquivo ? `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Abrir Comprovante</button>` : ''}
+                ${botaoVer}
                 <button class="btn-controle btn-aprovar" onclick="decidir('${a.id}', 'aprovado')">Aprovar</button>
                 <button class="btn-controle btn-reprovar" onclick="decidir('${a.id}', 'reprovado')">Reprovar</button>
             </div>`;
         });
         renderRanking();
+    }
+
+    function abrirPdfJanela(id) {
+        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+        const a = atvs.find(i => i.id == id);
+        const win = window.open();
+        win.document.write(`<iframe src="${a.arquivo}" frameborder="0" style="width:100%; height:100%;"></iframe>`);
     }
 
     function decidir(id, status) {
