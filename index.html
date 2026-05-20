@@ -9,7 +9,7 @@
         :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
         .card { background: white; max-width: 950px; margin: 20px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .hidden { display: none; }
+        .hidden { display: none !important; }
         input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
@@ -20,7 +20,7 @@
         .status-aprovado { border-left-color: var(--secondary); background: #f4faf6; }
         .status-reprovado { border-left-color: var(--danger); background: #fdf4f4; }
         
-        /* Tabela de Ranking Expandida (Pedido da Gestora) */
+        /* Tabela de Ranking Expandida */
         .ranking-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
         .ranking-table th, .ranking-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #ddd; }
         .ranking-table th { background-color: #f8f9fa; color: #333; }
@@ -69,58 +69,15 @@
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
         <h2>Recuperar Senha</h2>
-        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro. Se ele existir na base, enviaremos as instruções de recuperação.</p>
+        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro para recuperar seus dados de acesso.</p>
         <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail">
-        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Solicitação</button>
+        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Credenciais</button>
         <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
     </div>
 
-    <div id="painel-corretor" class="card hidden">
+    <div id="painel-corretor" class="card hidden" style="max-width: 700px;">
         <h2>Painel do Corretor</h2>
-    <div class="perfil-info">
-    <p style="margin: 0; font-size: 1.2em;">Olá, <strong id="nome-user">Amanda Elaine</strong>! Acompanhe seu progresso.</p>
-    
-    <div style="margin-top: 15px; background: #ddd; border-radius: 10px; padding: 2px; position: relative;">
-        <div id="barra-progresso" style="background: var(--secondary); height: 15px; width: 33%; border-radius: 8px; transition: 0.5s;"></div>
-    </div>
-    <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #555;">Você está no nível <span class="badge" id="nivel-user">Trainee</span> (100 pts). Faltam 200 pts para o nível Júnior!</p>
-
-    <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size: 0.8em; color: gray; display: block;">Minhas Vendas</span>
-            <strong style="color: var(--secondary); font-size: 1.2em;">1</strong>
-        </div>
-        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size: 0.8em; color: gray; display: block;">Meus Cursos</span>
-            <strong style="color: var(--accent); font-size: 1.2em;">2</strong>
-        </div>
-        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size: 0.8em; color: gray; display: block;">Sua Posição</span>
-            <strong style="color: var(--primary); font-size: 1.2em;">1º</strong>
-        </div>
-    </div>
-</div>
-    
-    <div style="margin-top: 15px; background: #ddd; border-radius: 10px; padding: 2px; position: relative;">
-        <div id="barra-progresso" style="background: var(--secondary); height: 15px; width: 33%; border-radius: 8px; transition: 0.5s;"></div>
-    </div>
-    <p style="margin: 5px 0 0 0; font-size: 0.85em; color: #555;">Você está no nível <span class="badge" id="nivel-user">Trainee</span> (100 pts). Faltam 200 pts para o nível Júnior!</p>
-
-    <div style="display: flex; gap: 10px; margin-top: 15px;">
-        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size: 0.8em; color: gray; display: block;">Minhas Vendas</span>
-            <strong style="color: var(--secondary); font-size: 1.2em;">1</strong>
-        </div>
-        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size: 0.8em; color: gray; display: block;">Meus Cursos</span>
-            <strong style="color: var(--accent); font-size: 1.2em;">2</strong>
-        </div>
-        <div style="flex: 1; background: #fff; padding: 10px; border-radius: 5px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size: 0.8em; color: gray; display: block;">Sua Posição</span>
-            <strong style="color: var(--primary); font-size: 1.2em;">1º</strong>
-        </div>
-    </div>
-</div>
+        <div class="perfil-info">Olá, <strong id="nome-user"></strong>! Acompanhe seu progresso.</div>
         
         <select id="tipo-atividade" onchange="toggleUpload()">
             <option value="Venda">Venda (Bougainville/Florença)</option>
@@ -168,7 +125,7 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
-    // ⚠️ CONFIGURAÇÃO DO EMAILJS: COLE AS SUAS CHAVES DO EMAILJS AQUI SE DESEJAR USAR O DISPARO DE E-MAIL REAL
+    // Chaves opcionais do EmailJS (Configurável)
     const EMAILJS_SERVICE_ID = "service_5rt8wnw";
     const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
     const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
@@ -180,12 +137,20 @@
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
+    // Controla a persistência da sessão sem quebras visuais
     window.onload = function() {
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
             usuarioLogado = JSON.parse(usuarioSalvo);
             document.getElementById('tela-login').classList.add('hidden');
             usuarioLogado.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
+        } else {
+            // Garante que se não houver sessão, apenas a tela de login fique visível
+            document.getElementById('tela-login').classList.remove('hidden');
+            document.getElementById('tela-cadastro').classList.add('hidden');
+            document.getElementById('tela-esqueceu').classList.add('hidden');
+            document.getElementById('painel-corretor').classList.add('hidden');
+            document.getElementById('painel-gestor').classList.add('hidden');
         }
     };
 
@@ -211,7 +176,7 @@
     async function cadastrarAtividade() {
         const btn = document.getElementById('btn-enviar');
         const tipo = document.getElementById('tipo-atividade').value;
-        const desc = document.getElementById('desc-atividade').value;
+        const desc = document.getElementById('desc-atividade').value.trim();
         const fileInput = document.getElementById('arquivo-input');
         let arquivoBase64 = null;
         let exibiuAvisoTamanho = false;
@@ -224,6 +189,7 @@
         try {
             if (tipo !== 'Venda' && fileInput.files.length > 0) {
                 const arquivoOriginal = fileInput.files;
+                // Limite seguro de 1.5MB
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -253,6 +219,7 @@
 
         } catch (e) {
             alert("Erro ao processar arquivo local.");
+            console.error(e);
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Atividade";
@@ -287,26 +254,20 @@
         } else alert("E-mail ou senha incorretos");
     }
 
-    // LÓGICA DE RECUPERAÇÃO BLINDADA E 100% SECRETA
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const btn = document.getElementById('btn-recuperar');
         
         if(!emailInformado) return alert("Por favor, digite seu e-mail.");
-
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
-
-        // Mensagem padrão de segurança preventiva
-        const mensagemSucessoPadrao = "Se o e-mail informado estiver cadastrado em nossa base corporativa, as instruções privadas de recuperação foram transmitidas para a sua caixa de entrada.";
+        const mensagemSucessoPadrao = "Se o e-mail informado estiver cadastrado em nossa base corporativa, as instruções privadas de recuperação foram transmitidas.";
 
         btn.disabled = true;
-        btn.innerText = "Processando requisição de segurança...";
+        btn.innerText = "Processando...";
 
-        // Se o EmailJS NÃO estiver configurado com os tokens reais da sua conta:
         if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
             setTimeout(() => {
-                // AVISO FICTÍCIO SEGURO: Não exibe a senha e instrui o usuário a falar com o suporte/gestora
-                alert("O serviço automatizado de envio externo não está ativado para este domínio. Por favor, solicite a redefinição manual diretamente à Gestora Comercial.");
+                alert("O serviço automatizado de envio externo não está ativado. Por favor, solicite a redefinição manual diretamente à Gestora Comercial.");
                 alternarTelas('tela-esqueceu', 'tela-login');
                 document.getElementById('esqueceu-email').value = "";
                 btn.disabled = false;
@@ -315,7 +276,6 @@
             return;
         }
 
-        // Se as chaves reais estiverem configuradas, o sistema tenta o envio real
         if(usuarioEncontrado) {
             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
                 to_email: usuarioEncontrado.email,
@@ -327,9 +287,8 @@
                 document.getElementById('esqueceu-email').value = "";
             })
             .catch((err) => {
-                console.error("Falha no serviço:", err);
-                // PROTEÇÃO MÁXIMA: Se falhar o envio, orienta o suporte em vez de expor os dados
-                alert("Ocorreu uma instabilidade na comunicação com o servidor de e-mail. Por favor, solicite seu acesso diretamente à Gestora Comercial do Grupo Status.");
+                console.error(err);
+                alert("Ocorreu uma instabilidade no envio corporativo. Solicite seu acesso diretamente à Gestora Comercial do Grupo Status.");
                 alternarTelas('tela-esqueceu', 'tela-login');
             })
             .finally(() => {
@@ -337,7 +296,6 @@
                 btn.innerText = "Enviar Credenciais";
             });
         } else {
-            // Se o e-mail não existir, simula um tempo de carregamento antes de dar a resposta padrão (Evita varredura de hackers)
             setTimeout(() => {
                 alert(mensagemSucessoPadrao);
                 alternarTelas('tela-esqueceu', 'tela-login');
