@@ -32,11 +32,19 @@
         .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
         .label-seguranca { color: var(--danger); font-weight: bold; font-size: 0.85em; }
 
-        /* Componentes de Gamificação */
+        /* Gamificação */
         .container-progresso { background: #e0e0e0; border-radius: 20px; height: 24px; width: 100%; margin: 15px 0; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
         .barra-dinamica { height: 100%; width: 0%; transition: width 0.8s ease-in-out, background-color 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
+        .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
+        .btn-resgate { background: #ffc107; color: #333; margin-top: 10px; font-size: 0.9em; border: 1px solid #d39e00; }
+        .btn-resgate:hover { background: #e0a800; }
         
+        /* Notificações Gestor */
+        .notif-premio { padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; font-size: 0.9em; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .premio-aguardando { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+        .premio-entregue { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; opacity: 0.7; }
+        .badge-status { font-size: 0.8em; padding: 3px 8px; border-radius: 10px; color: white; }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.01); box-shadow: 0 4px 10px rgba(255, 193, 7, 0.2); }
@@ -53,7 +61,7 @@
         <button onclick="fazerLogin()">Entrar</button>
         
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
-        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')", style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')" style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
 
     <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
@@ -122,6 +130,11 @@
 
     <div id="painel-gestor" class="card hidden">
         <h2>Gestão Comercial - Grupo Status</h2>
+        
+        <h3 style="color: var(--primary); display: flex; align-items: center; gap: 8px;">🎁 Prêmios a Entregar (Monitor de Metas)</h3>
+        <div id="lista-premios-gestor" style="margin-bottom: 25px;"></div>
+        <hr>
+
         <h3>Pendências para Avaliação:</h3>
         <div id="lista-pendentes"></div>
         <hr>
@@ -177,7 +190,6 @@
 
     function toggleUpload() {
         const t = document.getElementById('tipo-atividade').value;
-        // Agora todas exigem anexo exceto se quiser mudar alguma regra específica
         document.getElementById('campo-upload').className = '';
     }
 
@@ -190,7 +202,6 @@
         });
     }
 
-    // --- CÁLCULO INDIVIDUAL DETALHADO ---
     function obterPontosUsuario(email) {
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const aprovadas = atvs.filter(a => a.email === email && a.status === 'aprovado');
@@ -216,9 +227,7 @@
         let exibiuAvisoTamanho = false;
 
         if (!desc) return alert("Descreva a atividade");
-        
         btn.disabled = true;
-        btn.innerText = "Registrando...";
 
         try {
             if (fileInput.files.length > 0) {
@@ -241,9 +250,9 @@
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             
             if (exibiuAvisoTamanho) {
-                alert("Enviado em formato de texto! Como o arquivo superou 1.5MB, valide a imagem diretamente com a gerência.");
+                alert("Enviado em texto! Imagem maior que 1.5MB, apresente fisicamente.");
             } else {
-                alert("Atividade enviada com sucesso para análise!");
+                alert("Atividade enviada com sucesso!");
             }
             
             document.getElementById('desc-atividade').value = "";
@@ -265,8 +274,8 @@
         const chaveDigitada = document.getElementById('cad-chave-empresa').value;
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
-        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave da Construtora incorreta!");
-        if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já está registrado.");
+        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave incorreta!");
+        if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já existe.");
         
         listaUsuarios.push({ nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value });
         localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
@@ -295,64 +304,80 @@
         btn.disabled = true;
         if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
             setTimeout(() => {
-                alert("Serviço externo inativo. Solicite suporte redefinindo direto na gestão.");
+                alert("O serviço automatizado de envio não está ativo. Solicite redefinição direta à Gestora.");
                 alternarTelas('tela-esqueceu', 'tela-login');
                 btn.disabled = false;
             }, 1000);
             return;
         }
-
-        if(usuarioEncontrado) {
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: usuarioEncontrado.email, senha_usuario: usuarioEncontrado.senha })
-            .then(() => { alert("Instruções transmitidas se o e-mail constar em nossa base."); alternarTelas('tela-esqueceu', 'tela-login'); })
-            .catch(() => alert("Falha na transmissão."))
-            .finally(() => btn.disabled = false);
-        } else {
-            setTimeout(() => { alert("Processado."); alternarTelas('tela-esqueceu', 'tela-login'); btn.disabled = false; }, 1200);
-        }
     }
 
-    // --- RENDERIZAR PAINEL CORRETOR (BARRA TÉRMICA & PRÊMIOS) ---
+    // --- FUNÇÃO DE ARMAZENAMENTO DE RESGATES ---
+    function registrarResgate(metaPremio) {
+        let resgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
+        resgates.push({
+            email: usuarioLogado.email,
+            nome: usuarioLogado.nome,
+            meta: metaPremio,
+            data: new Date().toLocaleDateString('pt-BR')
+        });
+        localStorage.setItem('resgates_status', JSON.stringify(resgates));
+        alert("Resgate processado com sucesso! O aviso sumirá do seu painel corporativo e a gestora comercial foi atualizada.");
+        mostrarCorretor();
+    }
+
+    // --- RENDERS PAINEL CORRETOR ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
         
-        // Coleta de pontos reais e aprovação
         const resumoPts = obterPontosUsuario(usuarioLogado.email);
         const total = resumoPts.total;
         
         document.getElementById('pontos-total-user').innerText = total;
 
-        // Cálculos da Barra Térmica Inteligente
         const barra = document.getElementById('barra-progresso');
         let porcentagem = Math.min((total / 1000) * 100, 100);
         barra.style.width = porcentagem + "%";
         barra.innerText = Math.round(porcentagem) + "%";
 
-        // Lógica HSL (0 = Vermelho, 60 = Amarelo, 120 = Verde)
         let matizCor = Math.min((total / 1000) * 120, 120);
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
-        // Processamento Dinâmico de Avisos de Prêmios
+        // Gerenciamento e filtro de avisos baseados no histórico de cliques do botão "Resgatei"
         const boxPremio = document.getElementById('box-premio-alcançado');
         boxPremio.classList.add('hidden');
         boxPremio.innerHTML = "";
 
-        if (total >= 1000) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
-        } else if (total >= 750) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 500) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 250) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
+        const meusResgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
+        const jaResgatou = (meta) => meusResgates.some(r => r.email === usuarioLogado.email && r.meta === meta);
+
+        let metaAlcancadaAtualmente = 0;
+        let textoPremioHtml = "";
+
+        if (total >= 1000 && !jaResgatou(1000)) {
+            metaAlcancadaAtualmente = 1000;
+            textoPremioHtml = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
+        } else if (total >= 750 && !jaResgatou(750)) {
+            metaAlcancadaAtualmente = 750;
+            textoPremioHtml = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 500 && !jaResgatou(500)) {
+            metaAlcancadaAtualmente = 500;
+            textoPremioHtml = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 250 && !jaResgatou(250)) {
+            metaAlcancadaAtualmente = 250;
+            textoPremioHtml = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
         }
 
-        // Histórico de logs
+        if (metaAlcancadaAtualmente > 0) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerHTML = `
+                <div>${textoPremioHtml}</div>
+                <button class="btn-resgate" onclick="registrarResgate(${metaAlcancadaAtualmente})">✔ Resgatei o prêmio</button>
+            `;
+            boxPremio.classList.remove('hidden');
+        }
+
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
@@ -363,9 +388,50 @@
         });
     }
 
-    // --- RENDERIZAR PAINEL GESTOR (ANÁLISE DE PERFORMANCE COMPLETA) ---
+    // --- RENDERS PAINEL GESTOR ---
     function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
+        
+        // RENDER DE PRÊMIOS DA GESTORA
+        const containerPremiosGestor = document.getElementById('lista-premios-gestor');
+        containerPremiosGestor.innerHTML = "";
+
+        const todosResgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
+        let contadorPremiosExibidos = 0;
+
+        // Varre a lista de corretores ativos para encontrar quem bateu metas
+        listaUsuarios.filter(u => u.cargo === 'corretor').forEach(c => {
+            const totalPts = obterPontosUsuario(c.email).total;
+            const metasPrêmios =;
+
+            metasPrêmios.forEach(meta => {
+                if (totalPts >= meta) {
+                    contadorPremiosExibidos++;
+                    // Checa se o corretor já deu baixa
+                    const resgatado = todosResgates.some(r => r.email === c.email && r.meta === meta);
+                    
+                    if (!resgatado) {
+                        containerPremiosGestor.innerHTML += `
+                            <div class="notif-premio premio-aguardando">
+                                <span>🔔 Metas: <strong>${c.nome}</strong> acumulou ${totalPts} pts e conquistou o prêmio de ${meta} pontos!</span>
+                                <span class="badge-status" style="background: var(--danger)">Aguardando Retirada</span>
+                            </div>`;
+                    } else {
+                        const dadosResgate = todosResgates.find(r => r.email === c.email && r.meta === meta);
+                        containerPremiosGestor.innerHTML += `
+                            <div class="notif-premio premio-entregue">
+                                <span>✔ Entregue: <strong>${c.nome}</strong> retirou o prêmio da meta de ${meta} pontos.</span>
+                                <span class="badge-status" style="background: var(--secondary)">Entregue em ${dadosResgate.data}</span>
+                            </div>`;
+                    }
+                }
+            });
+        });
+
+        if(contadorPremiosExibidos === 0) {
+            containerPremiosGestor.innerHTML = "<p style='color: gray; font-size: 0.9em;'>Nenhum consultor atingiu patamares de prêmios até o momento.</p>";
+        }
+
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const pend = atvs.filter(a => a.status === 'pendente');
         const lista = document.getElementById('lista-pendentes');
