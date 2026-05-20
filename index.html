@@ -14,7 +14,7 @@
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         
-        .item-atividade { padding: 15px; margin-bottom: 10px; border-radius: 4px; border-left: 5px solid #ccc; background: #fdfdfd; }
+        .item-atividade { padding: 15px; margin-bottom: 10px; border-radius: 4px; border-left: 5px solid #ccc; background: #fdfdfd; position: relative; }
         .status-pendente { border-left-color: var(--warning); background: #fffdf0; }
         .status-aprovado { border-left-color: var(--secondary); background: #f4faf6; }
         .status-reprovado { border-left-color: var(--danger); background: #fdf4f4; }
@@ -28,6 +28,11 @@
         .btn-aprovar { background: var(--secondary); }
         .btn-reprovar { background: var(--danger); }
         .btn-ver { background: var(--accent); }
+        
+        /* Botão de excluir atividade estilo lixeira */
+        .btn-excluir { background: var(--danger); float: right; padding: 5px 10px; width: auto; margin: 0; font-size: 0.8em; }
+        .clear-float { clear: both; }
+
         .perfil-info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
         .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
         .label-seguranca { color: var(--danger); font-weight: bold; font-size: 0.85em; }
@@ -35,16 +40,9 @@
         /* Componentes de Gamificação */
         .container-progresso { background: #e0e0e0; border-radius: 20px; height: 24px; width: 100%; margin: 15px 0; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
         .barra-dinamica { height: 100%; width: 0%; transition: width 0.8s ease-in-out, background-color 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
-        .btn-resgate { background: #ffc107; color: #333; margin-top: 10px; font-size: 0.9em; border: 1px solid #d39e00; width: auto; padding: 8px 20px; }
-        .btn-resgate:hover { background: #e0a800; }
+        .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
+        .card-premio-gestor { background: #d4edda; border-left: 5px solid #28a745; padding: 10px; margin: 8px 0; border-radius: 4px; font-size: 0.9em; color: #155724; }
         
-        /* Layout Administrativo */
-        .notif-premio { padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; font-size: 0.9em; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .premio-aguardando { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
-        .premio-entregue { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; opacity: 0.7; }
-        .badge-status { font-size: 0.8em; padding: 3px 8px; border-radius: 10px; color: white; }
-
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.01); box-shadow: 0 4px 10px rgba(255, 193, 7, 0.2); }
@@ -61,7 +59,7 @@
         <button onclick="fazerLogin()">Entrar</button>
         
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
-        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')" style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')", style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
 
     <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
@@ -131,19 +129,21 @@
     <div id="painel-gestor" class="card hidden">
         <h2>Gestão Comercial - Grupo Status</h2>
         
-        <h3 style="color: var(--primary);">🎁 Prêmios a Entregar (Monitor de Metas)</h3>
-        <div id="lista-premios-gestor" style="margin-bottom: 25px;"></div>
+        <!-- Notificações de prêmios para o gestor -->
+        <h3>📢 Alertas de Premiações Alcançadas:</h3>
+        <div id="alertas-premios-gestor" style="margin-bottom: 20px;"></div>
         <hr>
 
         <h3>Pendências para Avaliação:</h3>
         <div id="lista-pendentes"></div>
         <hr>
         
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-            <h3>🏆 Ranking de Corretores (Análise de Performance da Gestora)</h3>
-            <button onclick="exportarRankingExcel()" style="background: var(--secondary); width: auto; padding: 10px 20px; font-size: 0.9em;">📥 Baixar Ranking em Excel</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+            <h3>🏆 Ranking de Corretores (Análise de Performance)</h3>
+            <!-- Botão para baixar relatório em CSV -->
+            <button onclick="exportarRankingCSV()" style="background: #27ae60; width: auto; padding: 10px 20px; margin: 0;">📥 Baixar Ranking (CSV)</button>
         </div>
-        
+
         <table class="ranking-table">
             <thead>
                 <tr>
@@ -166,9 +166,9 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
-    const EMAILJS_SERVICE_ID = "service_5rt8wnw";
-    const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
-    const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
+    const EMAILJS_SERVICE_ID = "COLE_AQUI_SEU_SERVICE_ID";
+    const EMAILJS_TEMPLATE_ID = "COLE_AQUI_SEU_TEMPLATE_ID";
+    const EMAILJS_PUBLIC_KEY = "COLE_AQUI_SUA_PUBLIC_KEY";
 
     if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
         emailjs.init(EMAILJS_PUBLIC_KEY);
@@ -194,6 +194,7 @@
     }
 
     function toggleUpload() {
+        const t = document.getElementById('tipo-atividade').value;
         document.getElementById('campo-upload').className = '';
     }
 
@@ -237,7 +238,7 @@
 
         try {
             if (fileInput.files.length > 0) {
-                const arquivoOriginal = fileInput.files; // CORREÇÃO: Pega o arquivo único da lista
+                const arquivoOriginal = fileInput.files[0];
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -292,7 +293,6 @@
     function fazerLogin() {
         const e = document.getElementById('login-email').value.trim();
         const s = document.getElementById('login-senha').value;
-        listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
         const u = listaUsuarios.find(user => user.email === e && user.senha === s);
         if (u) {
             usuarioLogado = u;
@@ -328,17 +328,26 @@
         }
     }
 
-    function registrarResgate(metaPremio) {
-        let resgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
-        resgates.push({
-            email: usuarioLogado.email,
-            nome: usuarioLogado.nome,
-            meta: metaPremio,
-            data: new Date().toLocaleDateString('pt-BR')
-        });
-        localStorage.setItem('resgates_status', JSON.stringify(resgates));
-        alert("Resgate enviado! O aviso sumirá do seu painel e a gestora comercial foi atualizada.");
-        mostrarCorretor();
+    // --- NOVA FUNÇÃO GLOBAL PARA EXCLUSÃO DE ATIVIDADES ---
+    function apagarAtividade(id) {
+        // Alerta em vermelho por meio da caixa nativa de confirmação do navegador
+        const confirmacao = confirm("⚠️ Você realmente quer apagar esta atividade?");
+        
+        if (confirmacao) {
+            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+            // Filtra removendo a atividade com o id selecionado
+            atvs = atvs.filter(a => a.id != id);
+            localStorage.setItem('atividades_status', JSON.stringify(atvs));
+            
+            alert("Pontuação extraída com sucesso!");
+            
+            // Atualiza a tela correspondente baseado em quem está logado
+            if (usuarioLogado.cargo === 'gestor') {
+                mostrarGestor();
+            } else {
+                mostrarCorretor();
+            }
+        }
     }
 
     function mostrarCorretor() {
@@ -362,33 +371,18 @@
         boxPremio.classList.add('hidden');
         boxPremio.innerHTML = "";
 
-        const meusResgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
-        const jaResgatou = (meta) => meusResgates.some(r => r.email === usuarioLogado.email && r.meta === meta);
-
-        let metaAlcancadaAtualmente = 0;
-        let textoPremioHtml = "";
-
-        if (total >= 1000 && !jaResgatou(1000)) {
-            metaAlcancadaAtualmente = 1000;
-            textoPremioHtml = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
-        } else if (total >= 750 && !jaResgatou(750)) {
-            metaAlcancadaAtualmente = 750;
-            textoPremioHtml = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 500 && !jaResgatou(500)) {
-            metaAlcancadaAtualmente = 500;
-            textoPremioHtml = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 250 && !jaResgatou(250)) {
-            metaAlcancadaAtualmente = 250;
-            textoPremioHtml = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
-        }
-
-        if (metaAlcancadaAtualmente > 0) {
+        if (total >= 1000) {
             boxPremio.className = "card-premio";
-            boxPremio.innerHTML = `
-                <div>${textoPremioHtml}</div>
-                <button class="btn-resgate" onclick="registrarResgate(${metaAlcancadaAtualmente})">✔ Resgatei o prêmio</button>
-            `;
-            boxPremio.classList.remove('hidden');
+            boxPremio.innerText = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
+        } else if (total >= 750) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 500) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 250) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
         }
 
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
@@ -397,50 +391,19 @@
         hist.innerHTML = ""; 
         minhas.reverse().forEach(a => {
             let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
-            hist.innerHTML += `<div class="item-atividade status-${a.status}"><strong>${labelTipo}</strong>: ${a.desc} (${a.status.toUpperCase()})</div>`;
+            
+            // Adicionado botão da lixeira (excluir) no histórico do consultor
+            hist.innerHTML += `
+                <div class="item-atividade status-${a.status}">
+                    <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
+                    <strong>${labelTipo}</strong>: ${a.desc} (${a.status.toUpperCase()})
+                    <div class="clear-float"></div>
+                </div>`;
         });
     }
 
     function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
-        
-        const containerPremiosGestor = document.getElementById('lista-premios-gestor');
-        containerPremiosGestor.innerHTML = "";
-
-        const todosResgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
-        let contadorPremiosExibidos = 0;
-
-        listaUsuarios.filter(u => u.cargo === 'corretor').forEach(c => {
-            const totalPts = obterPontosUsuario(c.email).total;
-            const metasPremios =; // CORREÇÃO: Array de metas preenchido perfeitamente
-
-            metasPremios.forEach(meta => {
-                if (totalPts >= meta) {
-                    contadorPremiosExibidos++;
-                    const resgatado = todosResgates.some(r => r.email === c.email && r.meta === meta);
-                    
-                    if (!resgatado) {
-                        containerPremiosGestor.innerHTML += `
-                            <div class="notif-premio premio-aguardando">
-                                <span>🔔 Metas: <strong>${c.nome}</strong> acumulou ${totalPts} pts e conquistou o prêmio de ${meta} pontos!</span>
-                                <span class="badge-status" style="background: var(--danger)">Aguardando Retirada</span>
-                            </div>`;
-                    } else {
-                        const dadosResgate = todosResgates.find(r => r.email === c.email && r.meta === meta);
-                        containerPremiosGestor.innerHTML += `
-                            <div class="notif-premio premio-entregue">
-                                <span>✔ Entregue: <strong>${c.nome}</strong> retirou o prêmio da meta de ${meta} pontos.</span>
-                                <span class="badge-status" style="background: var(--secondary)">Entregue em ${dadosResgate.data}</span>
-                            </div>`;
-                    }
-                }
-            });
-        });
-
-        if(contadorPremiosExibidos === 0) {
-            containerPremiosGestor.innerHTML = "<p style='color: gray; font-size: 0.9em;'>Nenhum consultor atingiu patamares de prêmios até o momento.</p>";
-        }
-
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const pend = atvs.filter(a => a.status === 'pendente');
         const lista = document.getElementById('lista-pendentes');
@@ -451,14 +414,20 @@
             let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
             let botaoVer = a.arquivo ? (a.arquivo.startsWith("data:application/pdf") ? `<button class="btn-controle btn-ver" onclick="abrirPdfJanela('${a.id}')">Ver PDF</button>` : `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`) : `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem mídia]</span>`;
             
+            // Adicionado botão da lixeira também nas pendências para o Gestor resolver direto se necessário
             lista.innerHTML += `<div class="item-atividade status-pendente">
-                <strong>${a.nome}</strong> enviou: ${labelTipo} (${a.desc})<br>
+                <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
+                <strong>${a.nome}</strong> enviou: ${labelTipo} (${a.desc})<br><br>
                 ${botaoVer}
                 <button class="btn-controle btn-aprovar" onclick="decidir('${a.id}', 'aprovado')">Aprovar</button>
                 <button class="btn-controle btn-reprovar" onclick="decidir('${a.id}', 'reprovado')">Reprovar</button>
+                <div class="clear-float"></div>
             </div>`;
         });
+        
+        // Renderiza o Ranking e roda a verificação dos prêmios alcançados para o Gestor ver
         renderRanking();
+        verificarPremiosParaGestor();
     }
 
     function abrirPdfJanela(id) {
@@ -498,25 +467,68 @@
         });
     }
 
-    function exportarRankingExcel() {
-        let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
+    // --- NOVA FUNÇÃO: VERIFICA PREMIAÇÕES DOS CONSULTORES NO PAINEL GESTOR ---
+    function verificarPremiosParaGestor() {
+        const containerAlertas = document.getElementById('alertas-premios-gestor');
+        containerAlertas.innerHTML = "";
+
+        let corretores = listaUsuarios.filter(u => u.cargo === 'corretor');
+        let alertasGerados = 0;
+
+        corretores.forEach(c => {
+            const pontos = obterPontosUsuario(c.email).total;
+            let mensagemPremio = "";
+
+            if (pontos >= 1000) {
+                mensagemPremio = `🏆 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>4º Prêmio (Final)!</strong>`;
+            } else if (pontos >= 750) {
+                mensagemPremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>3º Prêmio!</strong>`;
+            } else if (pontos >= 500) {
+                mensagemPremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>2º Prêmio!</strong>`;
+            } else if (pontos >= 250) {
+                mensagemPremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>1º Prêmio!</strong>`;
+            }
+
+            if (mensagemPremio !== "") {
+                alertasGerados++;
+                containerAlertas.innerHTML += `<div class="card-premio-gestor">${mensagemPremio}</div>`;
+            }
+        });
+
+        if (alertasGerados === 0) {
+            containerAlertas.innerHTML = "<p style='color: gray; font-style: italic; font-size:0.9em;'>Nenhum consultor atingiu a meta mínima de prêmios (250 pts) ainda.</p>";
+        }
+    }
+
+    // --- NOVA FUNÇÃO: EXPORTAR RANKING PARA CSV ---
+    function exportarRankingCSV() {
+        let corretoresRankeados = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
             const r = obterPontosUsuario(c.email);
             return { nome: c.nome, ...r };
         }).sort((a,b) => b.total - a.total);
 
-        if(rank.length === 0) {
-            return alert("Não existem corretores cadastrados para exportar.");
+        if (corretoresRankeados.length === 0) {
+            return alert("Não há dados de corretores para exportar.");
         }
 
-        let conteudoCsv = "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos\n";
-        rank.forEach((r, i) => {
-            conteudoCsv += `${i+1}º;${r.nome};${r.vg} pts;${r.vc} pts;${r.cur} pts;${r.net} pts;${r.rs} pts;${r.total} pts\n`;
+        // Cabeçalho estruturado para o arquivo CSV
+        let csvConteudo = "\uFEFF"; // Código BOM para forçar o Excel a reconhecer caracteres como acentos (UTF-8)
+        csvConteudo += "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos\n";
+
+        // Preenche as linhas com as informações tratadas
+        corretoresRankeados.forEach((r, index) => {
+            csvConteudo += `${index + 1}º;${r.nome};${r.vg} pts;${r.vc} pts;${r.cur} pts;${r.net} pts;${r.rs} pts;${r.total} pts\n`;
         });
 
-        let blob = new Blob(["\ufeff" + conteudoCsv], { type: "text/csv;charset=utf-8;" });
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Ranking_Grupo_Status.csv");
+        // Cria o gatilho invisível de download no navegador
+        const blob = new Blob([csvConteudo], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Ranking_Evolucao_Status_${Date.now()}.csv`);
+        link.style.visibility = 'hidden';
+        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
