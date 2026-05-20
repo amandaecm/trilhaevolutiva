@@ -135,7 +135,7 @@
         <div id="lista-premios-gestor" style="margin-bottom: 25px;"></div>
         <hr>
 
-        <h3>Pendências para Avaliação:</h3>
+        <h3>Pendências para Evaluation:</h3>
         <div id="lista-pendentes"></div>
         <hr>
         
@@ -177,7 +177,7 @@
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
-    // Inicializador de telas limpo e isolado
+    // Inicializador corrigido sem chamadas fantasmas de ID
     window.onload = function() {
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
@@ -478,6 +478,7 @@
         });
     }
 
+    // Exportação em formato tabular compatível com Microsoft Excel
     function exportarRankingExcel() {
         let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
             const r = obterPontosUsuario(c.email);
