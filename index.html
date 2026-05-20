@@ -41,7 +41,11 @@
         .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
         .card-premio-gestor { background: #d4edda; border-left: 5px solid #28a745; padding: 10px; margin: 8px 0; border-radius: 4px; font-size: 0.9em; color: #155724; }
         
-        /* Estilos da nova ferramenta de redefinição */
+        /* Estilos do Sistema de Abas */
+        .menu-abas { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .aba-btn { width: auto; padding: 10px 20px; background: #e2e8f0; color: #333; margin: 0; border-radius: 5px 5px 0 0; }
+        .aba-btn.ativa { background: var(--primary); color: white; }
+
         .box-redefinicao { background: #f8f9fa; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-top: 15px; }
         .grid-redefinicao { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         @media(max-width: 600px) { .grid-redefinicao { grid-template-columns: 1fr; } }
@@ -87,14 +91,13 @@
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
         <h2 style="text-align: center; color: var(--primary);">Recuperar Senha</h2>
-        <div style="background: #fff5f5; border-left: 4px solid var(--danger); padding: 15px; border-radius: 4px; margin: 15px 0;">
-            <p style="font-size: 0.9em; color: #333; margin: 0; line-height: 1.5; text-align: center;">
-                ⚠️ <strong>Aviso Importante:</strong><br>
-                A recuperação automática por e-mail foi desativada.<br><br>
-                Por favor, solicite a redefinição de suas credenciais de acesso diretamente à <strong>Gestão Comercial</strong> do Grupo Status.
-            </p>
+        <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail Registrado">
+        <button onclick="executarEsqueceuSenha()" style="background: var(--primary);">Verificar Credenciais</button>
+        
+        <div id="resposta-recuperacao" class="hidden" style="background: #fff5f5; border-left: 4px solid var(--danger); padding: 15px; border-radius: 4px; margin: 15px 0;">
+            <p id="texto-resposta-recuperacao" style="font-size: 0.9em; color: #333; margin: 0; line-height: 1.5; text-align: center;"></p>
         </div>
-        <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
+        <div class="link-alternar" onclick="fecharTelaEsqueceu()">Voltar para o Login</div>
     </div>
 
     <div id="painel-corretor" class="card hidden" style="max-width: 750px;">
@@ -136,57 +139,71 @@
     <div id="painel-gestor" class="card hidden">
         <h2>Gestão Comercial - Grupo Status</h2>
         
-        <h3>📢 Alertas de Premiações Alcançadas:</h3>
-        <div id="alertas-premios-gestor" style="margin-bottom: 20px;"></div>
-        <hr>
+        <div class="menu-abas">
+            <button id="btn-aba-geral" class="aba-btn ativa" onclick="mudarAbaGestor('geral')">📋 Acompanhamento Geral</button>
+            <button id="btn-aba-usuarios" class="aba-btn" onclick="mudarAbaGestor('usuarios')">👥 Gerenciar Consultores</button>
+        </div>
 
-        <h3>🔧 Painel de Controle: Redefinir Acesso de Consultores</h3>
-        <div class="box-redefinicao">
-            <p style="font-size: 0.85em; color: #555; margin-top: 0;">Selecione o consultor cadastrado para modificar suas credenciais de login instantaneamente:</p>
-            <label style="font-weight: bold; font-size: 0.85em;">Escolha o Consultor:</label>
-            <select id="select-redefinir-usuario" onchange="carregarDadosUsuarioParaGestor()">
-                <option value="">-- Selecione um Consultor --</option>
-            </select>
+        <div id="conteudo-aba-geral">
+            <h3>📢 Alertas de Premiações Alcançadas:</h3>
+            <div id="alertas-premios-gestor" style="margin-bottom: 20px;"></div>
+            <hr>
+
+            <h3>Pendências para Avaliação:</h3>
+            <div id="lista-pendentes"></div>
+            <hr>
             
-            <div class="grid-redefinicao">
-                <div>
-                    <label style="font-weight: bold; font-size: 0.85em;">Novo E-mail:</label>
-                    <input type="email" id="input-redefinir-email" placeholder="Ex: novoemail@status.com">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <h3>🏆 Ranking de Corretores (Análise de Performance)</h3>
+                <button onclick="exportarRankingCSV()" style="background: #27ae60; width: auto; padding: 10px 20px; margin: 0;">📥 Baixar Ranking (CSV)</button>
+            </div>
+
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th style="text-align: left;">Corretor</th>
+                        <th>Venda (Gestor)</th>
+                        <th>Venda (Corretor)</th>
+                        <th>Cursos</th>
+                        <th>Networking</th>
+                        <th>Redes Sociais</th>
+                        <th class="col-destaque">Total Pontos</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-ranking"></tbody>
+            </table>
+        </div>
+
+        <div id="conteudo-aba-usuarios" class="hidden">
+            <h3>🔧 Painel de Controle Administrativo</h3>
+            <div class="box-redefinicao">
+                <p style="font-size: 0.85em; color: #555; margin-top: 0;">Aqui você pode gerenciar os dados de acesso ou remover contas do sistema:</p>
+                
+                <label style="font-weight: bold; font-size: 0.85em;">Selecione o Consultor:</label>
+                <select id="select-redefinir-usuario" onchange="carregarDadosUsuarioParaGestor()">
+                    <option value="">-- Selecione um Consultor --</option>
+                </select>
+                
+                <div class="grid-redefinicao">
+                    <div>
+                        <label style="font-weight: bold; font-size: 0.85em;">Alterar E-mail:</label>
+                        <input type="email" id="input-redefinir-email" placeholder="Ex: novoemail@status.com">
+                    </div>
+                    <div>
+                        <label style="font-weight: bold; font-size: 0.85em;">Alterar Senha:</label>
+                        <input type="text" id="input-redefinir-senha" placeholder="Digite a nova senha">
+                    </div>
                 </div>
-                <div>
-                    <label style="font-weight: bold; font-size: 0.85em;">Nova Senha:</label>
-                    <input type="text" id="input-redefinir-senha" placeholder="Digite a nova senha">
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="salvarRedefinicaoGestor()" style="background: var(--accent); margin: 0;">Atualizar Dados de Acesso</button>
+                    <button onclick="excluirUsuarioGestor()" style="background: var(--danger); margin: 0; width: auto;">🗑️ Excluir Consultor permanentemente</button>
                 </div>
             </div>
-            <button onclick="salvarRedefinicaoGestor()" style="background: var(--accent); margin-top: 10px;">Atualizar Dados de Acesso</button>
-        </div>
-        <hr>
-
-        <h3>Pendências para Evaluation:</h3>
-        <div id="lista-pendentes"></div>
-        <hr>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-            <h3>🏆 Ranking de Corretores (Análise de Performance)</h3>
-            <button onclick="exportarRankingCSV()" style="background: #27ae60; width: auto; padding: 10px 20px; margin: 0;">📥 Baixar Ranking (CSV)</button>
         </div>
 
-        <table class="ranking-table">
-            <thead>
-                <tr>
-                    <th>Posição</th>
-                    <th style="text-align: left;">Corretor</th>
-                    <th>Venda (Gestor)</th>
-                    <th>Venda (Corretor)</th>
-                    <th>Cursos</th>
-                    <th>Networking</th>
-                    <th>Redes Sociais</th>
-                    <th class="col-destaque">Total Pontos</th>
-                </tr>
-            </thead>
-            <tbody id="tabela-ranking"></tbody>
-        </table>
-        <br>
+        <br><br>
         <button onclick="logout()" style="background: var(--danger); width: 100px;">Sair</button>
     </div>
 
@@ -210,6 +227,26 @@
     function alternarTelas(esc, mos) {
         document.getElementById(esc).classList.add('hidden');
         document.getElementById(mos).classList.remove('hidden');
+    }
+
+    // --- NOVA FUNÇÃO: INTERFACES DE ABAS PARA O GESTOR ---
+    function mudarAbaGestor(aba) {
+        const btnGeral = document.getElementById('btn-aba-geral');
+        const btnUsuarios = document.getElementById('btn-aba-usuarios');
+        const contGeral = document.getElementById('conteudo-aba-geral');
+        const contUsuarios = document.getElementById('conteudo-aba-usuarios');
+
+        if(aba === 'geral') {
+            btnGeral.classList.add('ativa');
+            btnUsuarios.classList.remove('ativa');
+            contGeral.classList.remove('hidden');
+            contUsuarios.classList.add('hidden');
+        } else {
+            btnGeral.classList.remove('ativa');
+            btnUsuarios.classList.add('ativa');
+            contGeral.classList.add('hidden');
+            contUsuarios.classList.remove('hidden');
+        }
     }
 
     function toggleUpload() {
@@ -319,6 +356,41 @@
             document.getElementById('tela-login').classList.add('hidden');
             u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
         } else alert("Dados incorretos");
+    }
+
+    // --- NOVA LOGICA INTELIGENTE: RECUPERAÇÃO DE ACESSO ---
+    function executarEsqueceuSenha() {
+        const emailInformado = document.getElementById('esqueceu-email').value.trim();
+        const caixaResposta = document.getElementById('resposta-recuperacao');
+        const textoResposta = document.getElementById('texto-resposta-recuperacao');
+
+        if(!emailInformado) return alert("Por favor, preencha o campo de e-mail.");
+
+        const contaEncontrada = listaUsuarios.find(user => user.email === emailInformado);
+
+        caixaResposta.classList.remove('hidden');
+
+        if (contaEncontrada) {
+            if (contaEncontrada.cargo === 'gestor') {
+                // Se for gestor, exibe a senha direto na tela por segurança interna
+                caixaResposta.style.borderLeftColor = "var(--secondary)";
+                textoResposta.innerHTML = `🔑 <strong>Acesso do Gestor Identificado!</strong><br><br>Sua senha atual é: <span style='font-size: 1.2em; color: var(--secondary); font-weight: bold;'>${contaEncontrada.senha}</span>`;
+            } else {
+                // Se for consultor, exibe o texto padrão solicitado
+                caixaResposta.style.borderLeftColor = "var(--danger)";
+                textoResposta.innerText = "consulte o setor administrativo para alterar senha";
+            }
+        } else {
+            // E-mail não encontrado na base do LocalStorage
+            caixaResposta.style.borderLeftColor = "var(--danger)";
+            textoResposta.innerText = "E-mail não localizado na base de dados. Caso seja um consultor, consulte o setor administrativo para alterar senha.";
+        }
+    }
+
+    function fecharTelaEsqueceu() {
+        document.getElementById('esqueceu-email').value = "";
+        document.getElementById('resposta-recuperacao').classList.add('hidden');
+        alternarTelas('tela-esqueceu', 'tela-login');
     }
 
     function apagarAtividade(id) {
@@ -558,7 +630,7 @@
         
         listaUsuarios = listaUsuarios.map(u => {
             if(u.email === emailAntigoChave) {
-                return { ...u, email: novoEmail, senate: novaSenha };
+                return { ...u, email: novoEmail, senha: novaSenha };
             }
             return u;
         });
@@ -581,6 +653,36 @@
         document.getElementById('input-redefinir-senha').value = "";
         
         mostrarGestor();
+    }
+
+    // --- NOVA FUNÇÃO: REMOVER CONSULTOR COMPLETO DA BASE ---
+    function excluirUsuarioGestor() {
+        const emailSelecionado = document.getElementById('select-redefinir-usuario').value;
+        if(!emailSelecionado) return alert("Por favor, selecione um consultor na lista para poder excluí-lo.");
+
+        const usuario = listaUsuarios.find(u => u.email === emailSelecionado);
+        
+        const confirmacao = confirm(`⚠️ ATENÇÃO EXTREMA:\nVocê deseja realmente DELETAR o consultor "${usuario.nome}" do sistema?\n\nIsso apagará a conta dele e removerá seu histórico do ranking automaticamente.`);
+        
+        if (confirmacao) {
+            // 1. Remove da lista de usuários logáveis
+            listaUsuarios = listaUsuarios.filter(u => u.email !== emailSelecionado);
+            localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
+
+            // 2. Remove as atividades associadas a ele para limpar o Ranking
+            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+            atvs = atvs.filter(a => a.email !== emailSelecionado);
+            localStorage.setItem('atividades_status', JSON.stringify(atvs));
+
+            alert("Consultor e todo o seu histórico foram removidos com sucesso!");
+            
+            // Limpa os campos da ferramenta
+            document.getElementById('input-redefinir-email').value = "";
+            document.getElementById('input-redefinir-senha').value = "";
+            
+            // Força a reatualização da interface do gestor
+            mostrarGestor();
+        }
     }
 
     function logout() { 
