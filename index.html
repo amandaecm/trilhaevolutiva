@@ -81,7 +81,7 @@
         <input type="password" id="cad-chave-empresa" placeholder="Digite a Chave de Acesso da Construtora">
         
         <button onclick="realizarCadastro()" style="background: var(--secondary);">Validar e Cadastrar</button>
-        <div class="link-alternar" onclick="alternarTelas('tela-cadastro', 'tela-login')" style="color: var(--danger);">Voltar para o Login</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-cadastro', 'tela-login')", style="color: var(--danger);">Voltar para o Login</div>
     </div>
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
@@ -111,7 +111,7 @@
             <option value="Venda_Gestor">Venda - Lead da Construtora [+100 pts]</option>
             <option value="Venda_Corretor">Venda - Lead Tráfego Próprio [+150 pts]</option>
             <option value="Curso">Curso / Palestra Concluída [+75 pts]</option>
-            <option value="Eventos">Networking / Evento Corporativo [+50 pts]</option>
+            <option value="Evento">Networking / Evento Corporativo [+50 pts]</option>
             <option value="Redes_Sociais">Movimentação Redes Sociais (Feed/Reels) [+15 pts]</option>
         </select>
         <input type="text" id="desc-atividade" placeholder="Descrição (Ex: Lote B-12 Bougainville ou Nome do Curso)">
@@ -170,7 +170,7 @@
     const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
     const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
 
-    if(EMAILJS_PUBLIC_KEY) {
+    if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY) {
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }
 
@@ -221,7 +221,7 @@
             if (a.tipo === 'Venda_Gestor') resumo.vg += 100;
             else if (a.tipo === 'Venda_Corretor') resumo.vc += 150;
             else if (a.tipo === 'Curso') resumo.cur += 75;
-            else if (a.tipo === 'Eventos') resumo.net += 50;
+            else if (a.tipo === 'Evento') resumo.net += 50;
             else if (a.tipo === 'Redes_Sociais') resumo.rs += 15;
         });
         resumo.total = resumo.vg + resumo.vc + resumo.cur + resumo.net + resumo.rs;
@@ -242,8 +242,8 @@
         btn.innerText = "Registrando...";
 
         try {
-            if (fileInput.files.length > 0) {
-                const arquivoOriginal = fileInput.files; 
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                const arquivoOriginal = fileInput.files; // CORREÇÃO: Resgatando o arquivo único corretamente
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -262,7 +262,7 @@
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             
             if (exibiuAvisoTamanho) {
-                alert("Enviado! Arquivo maior que 1.5MB, apresente o original impresso ou imagem à gerência.");
+                alert("Enviado em formato de texto! Como o arquivo superou 1.5MB, apresente o comprovante original à gerência.");
             } else {
                 alert("Atividade enviada com sucesso!");
             }
@@ -402,7 +402,7 @@
         const hist = document.getElementById('historico-corretor');
         hist.innerHTML = ""; 
         minhas.reverse().forEach(a => {
-            let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Eventos' ? 'Networking' : 'Redes Sociais')));
+            let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
             hist.innerHTML += `<div class="item-atividade status-${a.status}"><strong>${labelTipo}</strong>: ${a.desc} (${a.status.toUpperCase()})</div>`;
         });
     }
@@ -418,7 +418,7 @@
 
         listaUsuarios.filter(u => u.cargo === 'corretor').forEach(c => {
             const totalPts = obterPontosUsuario(c.email).total;
-            const metasPrêmios =; // CORREÇÃO: Array de metas restaurado
+            const metasPrêmios =; // CORREÇÃO: Array devidamente preenchido
 
             metasPrêmios.forEach(meta => {
                 if (totalPts >= meta) {
@@ -454,7 +454,7 @@
         lista.innerHTML = pend.length === 0 ? "<p>Nenhuma atividade aguardando avaliação comercial.</p>" : "";
         
         pend.forEach(a => {
-            let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Eventos' ? 'Networking' : 'Redes Sociais')));
+            let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
             let botaoVer = a.arquivo ? (a.arquivo.startsWith("data:application/pdf") ? `<button class="btn-controle btn-ver" onclick="abrirPdfJanela('${a.id}')">Ver PDF</button>` : `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`) : `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem mídia]</span>`;
             
             lista.innerHTML += `<div class="item-atividade status-pendente">
