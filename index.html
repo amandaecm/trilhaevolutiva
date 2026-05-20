@@ -177,7 +177,7 @@
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
-    // CORREÇÃO CRÍTICA: Inicializador de telas limpo e à prova de falhas de carregamento CSS
+    // Inicializador de telas limpo e isolado
     window.onload = function() {
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
@@ -298,7 +298,7 @@
             sessionStorage.setItem('usuario_logado_status', JSON.stringify(u));
             document.getElementById('tela-login').classList.add('hidden');
             u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
-        } else alert("Dados incorretos");
+        } else alert("E-mail ou senha incorretos");
     }
 
     function executarEsqueceuSenha() {
