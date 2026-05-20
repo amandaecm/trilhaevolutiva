@@ -309,7 +309,7 @@
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
 
         btn.disabled = true;
-        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
+        if(EMAILJS_SERVICE_ID.includes("service_5rt8wnw")) {
             setTimeout(() => {
                 alert("Serviço externo inativo. Solicite suporte redefinindo direto na gestão.");
                 alternarTelas('tela-esqueceu', 'tela-login');
@@ -476,7 +476,7 @@
         let alertasGerados = 0;
 
         corretores.forEach(c => {
-            const pontos = obterPontosUsuario(c.email).total;
+            const pontos = obterPontosUsuario(c.email).total;https://github.com/amandaecm/trilhaevolutiva/blob/main/index.html
             let mensagemPremio = "";
 
             if (pontos >= 1000) {
