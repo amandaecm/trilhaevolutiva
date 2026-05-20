@@ -26,7 +26,6 @@
         .btn-controle { width: auto; padding: 8px 15px; margin-right: 5px; font-size: 0.85em; }
         .btn-aprovar { background: var(--secondary); }
         .btn-reprovar { background: var(--danger); }
-        .btn-ver { background: var(--accent); }
         
         .btn-excluir { background: var(--danger); float: right; padding: 5px 10px; width: auto; margin: 0; font-size: 0.8em; }
         .clear-float { clear: both; }
@@ -49,6 +48,9 @@
         .box-redefinicao { background: #f8f9fa; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-top: 15px; }
         .grid-redefinicao { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         @media(max-width: 600px) { .grid-redefinicao { grid-template-columns: 1fr; } }
+
+        /* Estilo para a caixa de observação de e-mail */
+        .box-observacao-email { background: #eaf2f8; border-left: 5px solid var(--accent); padding: 15px; margin: 15px 0; border-radius: 4px; font-size: 0.9em; color: #2471a3; line-height: 1.5; }
 
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -115,7 +117,7 @@
         </div>
         
         <h3>Enviar Nova Atividade</h3>
-        <select id="tipo-atividade" onchange="toggleUpload()">
+        <select id="tipo-atividade">
             <option value="Venda_Gestor">Venda - Lead da Construtora [+100 pts]</option>
             <option value="Venda_Corretor">Venda - Lead Tráfego Próprio [+150 pts]</option>
             <option value="Curso">Curso / Palestra Concluída [+75 pts]</option>
@@ -124,9 +126,9 @@
         </select>
         <input type="text" id="desc-atividade" placeholder="Descrição (Ex: Lote B-12 Bougainville ou Nome do Curso)">
         
-        <div id="campo-upload">
-            <label style="font-weight: bold; font-size: 0.9em;">Anexar Comprovante (Imagem ou PDF - Limte expandido até 100MB):</label>
-            <input type="file" id="arquivo-input" accept="image/*,.pdf">
+        <div class="box-observacao-email">
+            ℹ️ <strong>Observação Importante:</strong><br>
+            Em caso de cursos, palestras ou participação em eventos, enviar certificado ou imagens para o e-mail: <strong>vendas@grupostatus.com.br</strong>
         </div>
 
         <button id="btn-enviar" onclick="cadastrarAtividade()" style="background: var(--accent); margin-top:15px;">Enviar Atividade</button>
@@ -211,64 +213,8 @@
     const CHAVE_STATUS_OFICIAL = "Status2026";
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
-    
-    // --- LÓGICA E CONFIGURAÇÃO DO INDEXEDDB PARA ARQUIVOS ATÉ 100MB ---
-    let dbIndexed;
-    const dbNome = "StatusDB_Midias";
-    const dbVersao = 1;
 
-    function iniciarBancoIndexedDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(dbNome, dbVersao);
-            request.onupgradeneeded = function(e) {
-                let db = e.target.result;
-                if (!db.objectStoreNames.contains("arquivos_atividades")) {
-                    db.createObjectStore("arquivos_atividades", { keyPath: "atividadeId" });
-                }
-            };
-            request.onsuccess = function(e) {
-                dbIndexed = e.target.result;
-                resolve();
-            };
-            request.onerror = e => reject("Erro abrindo IndexedDB");
-        });
-    }
-
-    function salvarArquivoNoIndexedDB(id, base64Data) {
-        return new Promise((resolve, reject) => {
-            const transacao = dbIndexed.transaction(["arquivos_atividades"], "readwrite");
-            const store = transacao.objectStore("arquivos_atividades");
-            const request = store.put({ atividadeId: String(id), arquivo: base64Data });
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject();
-        });
-    }
-
-    function obterArquivoDoIndexedDB(id) {
-        return new Promise((resolve) => {
-            const transacao = dbIndexed.transaction(["arquivos_atividades"], "readonly");
-            const store = transacao.objectStore("arquivos_atividades");
-            const request = store.get(String(id));
-            request.onsuccess = function(e) {
-                resolve(e.target.result ? e.target.result.arquivo : null);
-            };
-            request.onerror = () => resolve(null);
-        });
-    }
-
-    function deletarArquivoDoIndexedDB(id) {
-        const transacao = dbIndexed.transaction(["arquivos_atividades"], "readwrite");
-        const store = transacao.objectStore("arquivos_atividades");
-        store.delete(String(id));
-    }
-
-    window.onload = async function() {
-        try {
-            await iniciarBancoIndexedDB();
-        } catch(err) {
-            console.error("Não foi possível inicializar o armazenamento expansivo IndexedDB.");
-        }
-
+    window.onload = function() {
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
             usuarioLogado = JSON.parse(usuarioSalvo);
@@ -303,19 +249,6 @@
         }
     }
 
-    function toggleUpload() {
-        document.getElementById('campo-upload').className = '';
-    }
-
-    function lerArquivoDireto(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => resolve(event.target.result);
-            reader.onerror = e => reject(e);
-        });
-    }
-
     function obterPontosUsuario(email) {
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const aprovadas = atvs.filter(a => a.email === email && a.status === 'aprovado');
@@ -332,53 +265,34 @@
         return resumo;
     }
 
-    async function cadastrarAtividade() {
+    // --- FUNÇÃO DE CADASTRO SIMPLIFICADA SEM ARQUIVOS ---
+    function cadastrarAtividade() {
         const btn = document.getElementById('btn-enviar');
         const tipo = document.getElementById('tipo-atividade').value;
         const desc = document.getElementById('desc-atividade').value.trim();
-        const fileInput = document.getElementById('arquivo-input');
-        let idUnico = Date.now();
-        let possuiMidia = false;
 
         if (!desc) return alert("Descreva a atividade");
         
         btn.disabled = true;
-        btn.innerText = "Registrando e Armazenando...";
+        btn.innerText = "Registrando...";
 
         try {
-            if (fileInput.files.length > 0) {
-                const arquivoOriginal = fileInput.files;
-                
-                // Validação expandida para arquivos de até 100MB (104.857.600 bytes)
-                if (arquivoOriginal.size <= 104857600) {
-                    let arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
-                    await salvarArquivoNoIndexedDB(idUnico, arquivoBase64);
-                    possuiMidia = true;
-                } else {
-                    alert("O arquivo superou o limite de 100MB permitido.");
-                    btn.disabled = false;
-                    btn.innerText = "Enviar Atividade";
-                    return;
-                }
-            }
-
             let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
             atvs.push({
-                id: idUnico,
+                id: Date.now(),
                 email: usuarioLogado.email,
                 nome: usuarioLogado.nome,
-                tipo, desc, status: 'pendente', temArquivo: possuiMidia
+                tipo, desc, status: 'pendente'
             });
 
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
-            alert("Atividade enviada com sucesso para análise!");
+            alert("Atividade enviada com sucesso para análise do gestor!");
             
             document.getElementById('desc-atividade').value = "";
-            if(fileInput) fileInput.value = "";
             mostrarCorretor();
 
         } catch (e) {
-            alert("Erro ao processar e salvar o arquivo de grande porte.");
+            alert("Erro ao salvar a atividade.");
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Atividade";
@@ -413,7 +327,7 @@
         } else alert("Dados incorretos");
     }
 
-    function executarEsqueceuSenha() {
+    function ejecutarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const caixaResposta = document.getElementById('resposta-recuperacao');
         const textoResposta = document.getElementById('texto-resposta-recuperacao');
@@ -450,9 +364,6 @@
             let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
             atvs = atvs.filter(a => a.id != id);
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
-            
-            // Deleta também a mídia pesada correspondente do IndexedDB para economizar espaço
-            deletarArquivoDoIndexedDB(id);
             
             alert("Pontuação extraída com sucesso!");
             if (usuarioLogado.cargo === 'gestor') {
@@ -525,13 +436,9 @@
         pend.forEach(a => {
             let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
             
-            // Botão dinâmico configurado para buscar de forma assíncrona o arquivo no IndexedDB caso exista
-            let botaoVer = a.temArquivo ? `<button class="btn-controle btn-ver" onclick="visualizarMidaExpandida('${a.id}')">Visualizar Comprovante</button>` : `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem mídia]</span>`;
-            
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
                 <strong>${a.nome}</strong> enviou: ${labelTipo} (${a.desc})<br><br>
-                ${botaoVer}
                 <button class="btn-controle btn-aprovar" onclick="decidir('${a.id}', 'aprovado')">Aprovar</button>
                 <button class="btn-controle btn-reprovar" onclick="decidir('${a.id}', 'reprovado')">Reprovar</button>
                 <div class="clear-float"></div>
@@ -541,20 +448,6 @@
         renderRanking();
         verificarPremiosParaGestor();
         atualizarSelectConsultoresGestor(); 
-    }
-
-    // Carrega o arquivo pesado sob demanda na memória para exibição em uma nova janela
-    async function visualizarMidaExpandida(id) {
-        alert("Carregando o arquivo grande do banco de dados local... Aguarde um instante.");
-        const base64 = await obterArquivoDoIndexedDB(id);
-        if(!base64) return alert("Arquivo não localizado ou corrompido.");
-
-        const win = window.open();
-        if(base64.startsWith("data:application/pdf")) {
-            win.document.write(`<iframe src="${base64}" frameborder="0" style="width:100%; height:100%;"></iframe>`);
-        } else {
-            win.document.write(`<img src="${base64}" style="max-width:100%; height:auto;">`);
-        }
     }
 
     function decidir(id, status) {
@@ -596,21 +489,21 @@
 
         corretores.forEach(c => {
             const pontos = obterPontosUsuario(c.email).total;
-            let mensagemPremio = "";
+            let messagePremio = "";
 
             if (pontos >= 1000) {
-                mensagemPremio = `🏆 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>4º Prêmio (Final)!</strong>`;
+                messagePremio = `🏆 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>4º Prêmio (Final)!</strong>`;
             } else if (pontos >= 750) {
-                mensagemPremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>3º Prêmio!</strong>`;
+                messagePremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>3º Prêmio!</strong>`;
             } else if (pontos >= 500) {
-                mensagemPremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>2º Prêmio!</strong>`;
+                messagePremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>2º Prêmio!</strong>`;
             } else if (pontos >= 250) {
-                mensagemPremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>1º Prêmio!</strong>`;
+                messagePremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>1º Prêmio!</strong>`;
             }
 
-            if (mensagemPremio !== "") {
+            if (messagePremio !== "") {
                 alertasGerados++;
-                containerAlertas.innerHTML += `<div class="card-premio-gestor">${mensagemPremio}</div>`;
+                containerAlertas.innerHTML += `<div class="card-premio-gestor">${messagePremio}</div>`;
             }
         });
 
@@ -708,7 +601,7 @@
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
         }
         
-        alert("Credenciais updated com sucesso!");
+        alert("Credenciais atualizadas com sucesso!");
         document.getElementById('input-redefinir-email').value = "";
         document.getElementById('input-redefinir-senha').value = "";
         mostrarGestor();
@@ -722,18 +615,14 @@
         const confirmacao = confirm(`⚠️ ATENÇÃO EXTREMA:\nVocê deseja realmente DELETAR o consultor "${usuario.nome}" do sistema?\n\nIsso apagará a conta dele e removerá seu histórico do ranking automaticamente.`);
         
         if (confirmacao) {
-            // Coleta as atividades do usuário excluído para poder limpar também seus respectivos arquivos binários no IndexedDB
-            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-            const atvsDoUsuario = atvs.filter(a => a.email === emailSelecionado);
-            atvsDoUsuario.forEach(a => deletarArquivoDoIndexedDB(a.id));
-
             listaUsuarios = listaUsuarios.filter(u => u.email !== emailSelecionado);
             localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
 
+            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
             atvs = atvs.filter(a => a.email !== emailSelecionado);
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
 
-            alert("Consultor e todo o seu histórico de arquivos foram removidos com sucesso!");
+            alert("Consultor removido com sucesso!");
             document.getElementById('input-redefinir-email').value = "";
             document.getElementById('input-redefinir-senha').value = "";
             mostrarGestor();
