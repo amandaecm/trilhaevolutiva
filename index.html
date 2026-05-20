@@ -36,7 +36,7 @@
         .container-progresso { background: #e0e0e0; border-radius: 20px; height: 24px; width: 100%; margin: 15px 0; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
         .barra-dinamica { height: 100%; width: 0%; transition: width 0.8s ease-in-out, background-color 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
         .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
-        .btn-resgate { background: #ffc107; color: #333; margin-top: 10px; font-size: 0.9em; border: 1px solid #d39e00; }
+        .btn-resgate { background: #ffc107; color: #333; margin-top: 10px; font-size: 0.9em; border: 1px solid #d39e00; width: auto; padding: 8px 20px; }
         .btn-resgate:hover { background: #e0a800; }
         
         /* Notificações Gestor */
@@ -138,8 +138,13 @@
         <h3>Pendências para Avaliação:</h3>
         <div id="lista-pendentes"></div>
         <hr>
-        <h3>🏆 Ranking de Corretores (Análise de Performance da Gestora)</h3>
-        <table class="ranking-table">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <h3>🏆 Ranking de Corretores (Análise de Performance)</h3>
+            <button onclick="exportarRankingExcel()" style="background: var(--secondary); width: auto; padding: 10px 20px; font-size: 0.9em;">📥 Baixar Ranking em Excel</button>
+        </div>
+        
+        <table class="ranking-table" id="tabela-ranking-status">
             <thead>
                 <tr>
                     <th>Posição</th>
@@ -189,7 +194,6 @@
     }
 
     function toggleUpload() {
-        const t = document.getElementById('tipo-atividade').value;
         document.getElementById('campo-upload').className = '';
     }
 
@@ -312,7 +316,6 @@
         }
     }
 
-    // --- FUNÇÃO DE ARMAZENAMENTO DE RESGATES ---
     function registrarResgate(metaPremio) {
         let resgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
         resgates.push({
@@ -322,11 +325,10 @@
             data: new Date().toLocaleDateString('pt-BR')
         });
         localStorage.setItem('resgates_status', JSON.stringify(resgates));
-        alert("Resgate processado com sucesso! O aviso sumirá do seu painel corporativo e a gestora comercial foi atualizada.");
+        alert("Resgate processado com sucesso!");
         mostrarCorretor();
     }
 
-    // --- RENDERS PAINEL CORRETOR ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
@@ -344,7 +346,6 @@
         let matizCor = Math.min((total / 1000) * 120, 120);
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
-        // Gerenciamento e filtro de avisos baseados no histórico de cliques do botão "Resgatei"
         const boxPremio = document.getElementById('box-premio-alcançado');
         boxPremio.classList.add('hidden');
         boxPremio.innerHTML = "";
@@ -388,18 +389,15 @@
         });
     }
 
-    // --- RENDERS PAINEL GESTOR ---
     function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
         
-        // RENDER DE PRÊMIOS DA GESTORA
         const containerPremiosGestor = document.getElementById('lista-premios-gestor');
         containerPremiosGestor.innerHTML = "";
 
         const todosResgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
         let contadorPremiosExibidos = 0;
 
-        // Varre a lista de corretores ativos para encontrar quem bateu metas
         listaUsuarios.filter(u => u.cargo === 'corretor').forEach(c => {
             const totalPts = obterPontosUsuario(c.email).total;
             const metasPrêmios =;
@@ -407,7 +405,6 @@
             metasPrêmios.forEach(meta => {
                 if (totalPts >= meta) {
                     contadorPremiosExibidos++;
-                    // Checa se o corretor já deu baixa
                     const resgatado = todosResgates.some(r => r.email === c.email && r.meta === meta);
                     
                     if (!resgatado) {
@@ -487,6 +484,35 @@
                 <td class="col-destaque">${r.total} pts</td>
             </tr>`;
         });
+    }
+
+    // --- NOVA FUNÇÃO: EXTRAÇÃO DIRETA COMPATÍVEL COM EXCEL ---
+    function exportarRankingExcel() {
+        let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
+            const r = obterPontosUsuario(c.email);
+            return { nome: c.nome, ...r };
+        }).sort((a,b) => b.total - a.total);
+
+        if(rank.length === 0) {
+            return alert("Não existem corretores cadastrados para exportar no momento.");
+        }
+
+        // Cabeçalho estruturado do arquivo CSV
+        let conteudoCsv = "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos\n";
+        
+        rank.forEach((r, i) => {
+            conteudoCsv += `${i+1}º;${r.nome};${r.vg} pts;${r.vc} pts;${r.cur} pts;${r.net} pts;${r.rs} pts;${r.total} pts\n`;
+        });
+
+        // Injeta o Byte Order Mark (BOM) do UTF-8 para o Excel abrir mantendo acentuações perfeitas
+        let blob = new Blob(["\ufeff" + conteudoCsv], { type: "text/csv;charset=utf-8;" });
+        let link = document.createElement("a");
+        
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", "Ranking_Grupo_Status.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     function logout() { 
