@@ -101,7 +101,7 @@
         
         <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
         <label class="label-seguranca">🔒 Segurança do Grupo Status:</label>
-        <input type="password" id="cad-chave-empresa" placeholder="Digite a Chave de Acesso da Construtora">
+        <input type="password" id="cad-chave-empresa" placeholder="Digite a Chave de Acesso Corporativa">
         
         <button onclick="realizarCadastro()" style="background: var(--secondary);">Validar e Cadastrar</button>
         <div class="link-alternar" onclick="alternarTelas('tela-cadastro', 'tela-login')" style="color: var(--danger);">Voltar para o Login</div>
@@ -155,7 +155,7 @@
         
         <div class="box-observacao-email">
             ℹ️ <strong>Observação Importante:</strong><br>
-            Em caso de cursos, palestras ou participação em eventos, enviar certificado ou imagens para o e-mail: <strong>vendas@grupostatus.com.br</strong>
+            Em caso de cursos, palestras ou participation em eventos, enviar certificado ou imagens para o e-mail: <strong>vendas@grupostatus.com.br</strong>
         </div>
 
         <button id="btn-enviar" onclick="cadastrarAtividade()" style="background: var(--accent); margin-top:15px;">Enviar Atividade</button>
@@ -244,7 +244,9 @@
     </div>
 
 <script>
-    const CHAVE_STATUS_OFICIAL = "Status2026";
+    // Definição das constantes de autenticação da construtora
+    const CHAVE_GESTOR_OFICIAL = "Status2026";
+    const CHAVE_CORRETOR_OFICIAL = "consultorstatus";
     
     const SUPABASE_URL = "https://atcxdopulbgfbtrkwwce.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Y3hkb3B1bGJnZmJ0cmt3d2NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTI5MTIsImV4cCI6MjA5NDgyODkxMn0.rKmdB4eo-adGTr-H_8S8kaDHF1qbef51him0oswoaus";
@@ -313,6 +315,7 @@
         } else {
             btnGeral.classList.remove('ativa');
             btnUsuarios.classList.add('ativa');
+            contGeral.style.display = 'none';
             contGeral.classList.add('hidden');
             contUsuarios.classList.remove('hidden');
         }
@@ -357,20 +360,28 @@
         btn.innerText = "Enviar Atividade";
     }
 
+    // --- LOGICA REVISADA: VALIDAÇÃO MULTI-CHAVE BASEADA NO CARGO ---
     async function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
         const s = document.getElementById('cad-senha').value;
-        const chaveDigitada = document.getElementById('cad-chave-empresa').value;
+        const cargoSelecionado = document.getElementById('cad-cargo').value;
+        const chaveDigitada = document.getElementById('cad-chave-empresa').value.trim();
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
-        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave da Construtora incorreta!");
+        
+        // Separação de chaves baseada no nível de acesso selecionado
+        if (cargoSelecionado === 'gestor') {
+            if (chaveDigitada !== CHAVE_GESTOR_OFICIAL) return alert("Chave de Acesso do Gestor incorreta!");
+        } else {
+            if (chaveDigitada !== CHAVE_CORRETOR_OFICIAL) return alert("Chave de Acesso do Corretor incorreta!");
+        }
         
         await atualizarListaUsuariosLocal();
         if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já está registrado.");
         
         const { error } = await _supabase.from('usuarios').insert([
-            { nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value }
+            { nome: n, email: e, senha: s, cargo: cargoSelecionado }
         ]);
 
         if (error) {
@@ -397,7 +408,7 @@
         } else alert("Dados incorretos ou usuário não cadastrado.");
     }
 
-    function executarEsqueceuSenha() {
+    function ejecutarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const caixaResposta = document.getElementById('resposta-recuperacao');
         const textoResposta = document.getElementById('texto-resposta-recuperacao');
@@ -448,18 +459,18 @@
         const resumoPts = obterPontosUsuario(usuarioLogado.email, atvs);
         const totalGeral = resumoPts.total;
         
-        document.getElementById('points-total-user' ? 'pontos-total-user' : 'pontos-total-user').innerText = totalGeral;
+        document.getElementById('pontos-total-user').innerText = totalGeral;
 
-        let pontosNoCicloAtual = totalGeral % 1000;
-        if (pontosNoCicloAtual === 0 && totalGeral > 0) { pontosNoCicloAtual = 1000; }
-        document.getElementById('pontos-ciclo-user').innerText = pontosNoCicloAtual;
+        let pointsNoCicloAtual = totalGeral % 1000;
+        if (pointsNoCicloAtual === 0 && totalGeral > 0) { pointsNoCicloAtual = 1000; }
+        document.getElementById('pontos-ciclo-user').innerText = pointsNoCicloAtual;
 
         const barra = document.getElementById('barra-progresso');
-        let porcentagem = (pontosNoCicloAtual / 1000) * 100;
+        let porcentagem = (pointsNoCicloAtual / 1000) * 100;
         barra.style.width = porcentagem + "%";
         barra.innerText = Math.round(porcentagem) + "%";
 
-        let matizCor = (pontosNoCicloAtual / 1000) * 120;
+        let matizCor = (pointsNoCicloAtual / 1000) * 120;
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
         const boxPremio = document.getElementById('box-premio-alcançado');
@@ -469,26 +480,26 @@
         let ciclosCompletos = Math.floor(totalGeral / 1000);
         if(totalGeral % 1000 === 0 && totalGeral > 0) { ciclosCompletos = ciclosCompletos - 1; }
 
-        if (pontosNoCicloAtual >= 1000) {
+        if (pointsNoCicloAtual >= 1000) {
             boxPremio.className = "card-premio";
             let metaAlcancadaAlerta = (ciclosCompletos + 1) * 1000;
             boxPremio.innerText = `🏆 Você já alcançou ${metaAlcancadaAlerta} pontos, vamos começar de novo?`;
             boxPremio.classList.remove('hidden');
-        } else if (pontosNoCicloAtual >= 750) {
+        } else if (pointsNoCicloAtual >= 750) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa do ciclo atual, consulte sua gestão.";
             boxPremio.classList.remove('hidden');
-        } else if (pontosNoCicloAtual >= 500) {
+        } else if (pointsNoCicloAtual >= 500) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa do ciclo atual, consulte sua gestão.";
             boxPremio.classList.remove('hidden');
-        } else if (pontosNoCicloAtual >= 250) {
+        } else if (pointsNoCicloAtual >= 250) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa do ciclo atual, consulte sua gestão.";
             boxPremio.classList.remove('hidden');
         }
 
-        if(totalGeral > 1000 && pontosNoCicloAtual < 250) {
+        if(totalGeral > 1000 && pointsNoCicloAtual < 250) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = `🔄 Ciclo Anterior Concluído (${ciclosCompletos * 1000} pts)! Você iniciou uma nova contagem de prêmios. Boa sorte!`;
             boxPremio.classList.remove('hidden');
@@ -634,6 +645,7 @@
     
     function atualizarSelectConsultoresGestor() {
         const select = document.getElementById('select-redefinir-usuario');
+        if(!select) return;
         select.innerHTML = '<option value="">-- Selecione um Consultor --</option>';
         let corretores = listaUsuarios.filter(u => u.cargo === 'corretor');
         corretores.forEach(c => {
