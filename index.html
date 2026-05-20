@@ -90,7 +90,7 @@
     </div>
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
-        <h2 style="text-align: center; color: var(--primary);">Recuperar Senha</h2>
+        <h2>Recuperar Senha</h2>
         <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail Registrado">
         <button onclick="executarEsqueceuSenha()" style="background: var(--primary);">Verificar Credenciais</button>
         
@@ -125,7 +125,7 @@
         <input type="text" id="desc-atividade" placeholder="Descrição (Ex: Lote B-12 Bougainville ou Nome do Curso)">
         
         <div id="campo-upload">
-            <label style="font-weight: bold; font-size: 0.9em;">Anexar Comprovante (Imagem ou PDF):</label>
+            <label style="font-weight: bold; font-size: 0.9em;">Anexar Comprovante (Imagem ou PDF - Limte expandido até 100MB):</label>
             <input type="file" id="arquivo-input" accept="image/*,.pdf">
         </div>
 
@@ -209,11 +209,66 @@
 
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
-
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
+    
+    // --- LÓGICA E CONFIGURAÇÃO DO INDEXEDDB PARA ARQUIVOS ATÉ 100MB ---
+    let dbIndexed;
+    const dbNome = "StatusDB_Midias";
+    const dbVersao = 1;
 
-    window.onload = function() {
+    function iniciarBancoIndexedDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(dbNome, dbVersao);
+            request.onupgradeneeded = function(e) {
+                let db = e.target.result;
+                if (!db.objectStoreNames.contains("arquivos_atividades")) {
+                    db.createObjectStore("arquivos_atividades", { keyPath: "atividadeId" });
+                }
+            };
+            request.onsuccess = function(e) {
+                dbIndexed = e.target.result;
+                resolve();
+            };
+            request.onerror = e => reject("Erro abrindo IndexedDB");
+        });
+    }
+
+    function salvarArquivoNoIndexedDB(id, base64Data) {
+        return new Promise((resolve, reject) => {
+            const transacao = dbIndexed.transaction(["arquivos_atividades"], "readwrite");
+            const store = transacao.objectStore("arquivos_atividades");
+            const request = store.put({ atividadeId: String(id), arquivo: base64Data });
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject();
+        });
+    }
+
+    function obterArquivoDoIndexedDB(id) {
+        return new Promise((resolve) => {
+            const transacao = dbIndexed.transaction(["arquivos_atividades"], "readonly");
+            const store = transacao.objectStore("arquivos_atividades");
+            const request = store.get(String(id));
+            request.onsuccess = function(e) {
+                resolve(e.target.result ? e.target.result.arquivo : null);
+            };
+            request.onerror = () => resolve(null);
+        });
+    }
+
+    function deletarArquivoDoIndexedDB(id) {
+        const transacao = dbIndexed.transaction(["arquivos_atividades"], "readwrite");
+        const store = transacao.objectStore("arquivos_atividades");
+        store.delete(String(id));
+    }
+
+    window.onload = async function() {
+        try {
+            await iniciarBancoIndexedDB();
+        } catch(err) {
+            console.error("Não foi possível inicializar o armazenamento expansivo IndexedDB.");
+        }
+
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
             usuarioLogado = JSON.parse(usuarioSalvo);
@@ -229,7 +284,6 @@
         document.getElementById(mos).classList.remove('hidden');
     }
 
-    // --- NOVA FUNÇÃO: INTERFACES DE ABAS PARA O GESTOR ---
     function mudarAbaGestor(aba) {
         const btnGeral = document.getElementById('btn-aba-geral');
         const btnUsuarios = document.getElementById('btn-aba-usuarios');
@@ -250,7 +304,6 @@
     }
 
     function toggleUpload() {
-        const t = document.getElementById('tipo-atividade').value;
         document.getElementById('campo-upload').className = '';
     }
 
@@ -284,46 +337,48 @@
         const tipo = document.getElementById('tipo-atividade').value;
         const desc = document.getElementById('desc-atividade').value.trim();
         const fileInput = document.getElementById('arquivo-input');
-        let arquivoBase64 = null;
-        let exibiuAvisoTamanho = false;
+        let idUnico = Date.now();
+        let possuiMidia = false;
 
         if (!desc) return alert("Descreva a atividade");
         
         btn.disabled = true;
-        btn.innerText = "Registrando...";
+        btn.innerText = "Registrando e Armazenando...";
 
         try {
             if (fileInput.files.length > 0) {
                 const arquivoOriginal = fileInput.files;
-                if (arquivoOriginal.size <= 1572864) {
-                    arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
+                
+                // Validação expandida para arquivos de até 100MB (104.857.600 bytes)
+                if (arquivoOriginal.size <= 104857600) {
+                    let arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
+                    await salvarArquivoNoIndexedDB(idUnico, arquivoBase64);
+                    possuiMidia = true;
                 } else {
-                    exibiuAvisoTamanho = true;
+                    alert("O arquivo superou o limite de 100MB permitido.");
+                    btn.disabled = false;
+                    btn.innerText = "Enviar Atividade";
+                    return;
                 }
             }
 
             let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
             atvs.push({
-                id: Date.now(),
+                id: idUnico,
                 email: usuarioLogado.email,
                 nome: usuarioLogado.nome,
-                tipo, desc, status: 'pendente', arquivo: arquivoBase64
+                tipo, desc, status: 'pendente', temArquivo: possuiMidia
             });
 
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
-            
-            if (exibiuAvisoTamanho) {
-                alert("Enviado em formato de texto! Como o arquivo superou 1.5MB, valide a imagem diretamente com a gerência.");
-            } else {
-                alert("Atividade enviada com sucesso para análise!");
-            }
+            alert("Atividade enviada com sucesso para análise!");
             
             document.getElementById('desc-atividade').value = "";
             if(fileInput) fileInput.value = "";
             mostrarCorretor();
 
         } catch (e) {
-            alert("Erro ao ler o arquivo.");
+            alert("Erro ao processar e salvar o arquivo de grande porte.");
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Atividade";
@@ -358,7 +413,6 @@
         } else alert("Dados incorretos");
     }
 
-    // --- NOVA LOGICA INTELIGENTE: RECUPERAÇÃO DE ACESSO ---
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const caixaResposta = document.getElementById('resposta-recuperacao');
@@ -367,21 +421,17 @@
         if(!emailInformado) return alert("Por favor, preencha o campo de e-mail.");
 
         const contaEncontrada = listaUsuarios.find(user => user.email === emailInformado);
-
         caixaResposta.classList.remove('hidden');
 
         if (contaEncontrada) {
             if (contaEncontrada.cargo === 'gestor') {
-                // Se for gestor, exibe a senha direto na tela por segurança interna
                 caixaResposta.style.borderLeftColor = "var(--secondary)";
                 textoResposta.innerHTML = `🔑 <strong>Acesso do Gestor Identificado!</strong><br><br>Sua senha atual é: <span style='font-size: 1.2em; color: var(--secondary); font-weight: bold;'>${contaEncontrada.senha}</span>`;
             } else {
-                // Se for consultor, exibe o texto padrão solicitado
                 caixaResposta.style.borderLeftColor = "var(--danger)";
                 textoResposta.innerText = "consulte o setor administrativo para alterar senha";
             }
         } else {
-            // E-mail não encontrado na base do LocalStorage
             caixaResposta.style.borderLeftColor = "var(--danger)";
             textoResposta.innerText = "E-mail não localizado na base de dados. Caso seja um consultor, consulte o setor administrativo para alterar senha.";
         }
@@ -401,8 +451,10 @@
             atvs = atvs.filter(a => a.id != id);
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             
-            alert("Pontuação extraída com sucesso!");
+            // Deleta também a mídia pesada correspondente do IndexedDB para economizar espaço
+            deletarArquivoDoIndexedDB(id);
             
+            alert("Pontuação extraída com sucesso!");
             if (usuarioLogado.cargo === 'gestor') {
                 mostrarGestor();
             } else {
@@ -472,7 +524,9 @@
         
         pend.forEach(a => {
             let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
-            let botaoVer = a.arquivo ? (a.arquivo.startsWith("data:application/pdf") ? `<button class="btn-controle btn-ver" onclick="abrirPdfJanela('${a.id}')">Ver PDF</button>` : `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`) : `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem mídia]</span>`;
+            
+            // Botão dinâmico configurado para buscar de forma assíncrona o arquivo no IndexedDB caso exista
+            let botaoVer = a.temArquivo ? `<button class="btn-controle btn-ver" onclick="visualizarMidaExpandida('${a.id}')">Visualizar Comprovante</button>` : `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem mídia]</span>`;
             
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
@@ -489,11 +543,18 @@
         atualizarSelectConsultoresGestor(); 
     }
 
-    function abrirPdfJanela(id) {
-        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-        const a = atvs.find(i => i.id == id);
+    // Carrega o arquivo pesado sob demanda na memória para exibição em uma nova janela
+    async function visualizarMidaExpandida(id) {
+        alert("Carregando o arquivo grande do banco de dados local... Aguarde um instante.");
+        const base64 = await obterArquivoDoIndexedDB(id);
+        if(!base64) return alert("Arquivo não localizado ou corrompido.");
+
         const win = window.open();
-        win.document.write(`<iframe src="${a.arquivo}" frameborder="0" style="width:100%; height:100%;"></iframe>`);
+        if(base64.startsWith("data:application/pdf")) {
+            win.document.write(`<iframe src="${base64}" frameborder="0" style="width:100%; height:100%;"></iframe>`);
+        } else {
+            win.document.write(`<img src="${base64}" style="max-width:100%; height:auto;">`);
+        }
     }
 
     function decidir(id, status) {
@@ -647,40 +708,34 @@
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
         }
         
-        alert("Credenciais atualizadas com sucesso!");
-        
+        alert("Credenciais updated com sucesso!");
         document.getElementById('input-redefinir-email').value = "";
         document.getElementById('input-redefinir-senha').value = "";
-        
         mostrarGestor();
     }
 
-    // --- NOVA FUNÇÃO: REMOVER CONSULTOR COMPLETO DA BASE ---
     function excluirUsuarioGestor() {
         const emailSelecionado = document.getElementById('select-redefinir-usuario').value;
         if(!emailSelecionado) return alert("Por favor, selecione um consultor na lista para poder excluí-lo.");
 
         const usuario = listaUsuarios.find(u => u.email === emailSelecionado);
-        
         const confirmacao = confirm(`⚠️ ATENÇÃO EXTREMA:\nVocê deseja realmente DELETAR o consultor "${usuario.nome}" do sistema?\n\nIsso apagará a conta dele e removerá seu histórico do ranking automaticamente.`);
         
         if (confirmacao) {
-            // 1. Remove da lista de usuários logáveis
+            // Coleta as atividades do usuário excluído para poder limpar também seus respectivos arquivos binários no IndexedDB
+            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+            const atvsDoUsuario = atvs.filter(a => a.email === emailSelecionado);
+            atvsDoUsuario.forEach(a => deletarArquivoDoIndexedDB(a.id));
+
             listaUsuarios = listaUsuarios.filter(u => u.email !== emailSelecionado);
             localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
 
-            // 2. Remove as atividades associadas a ele para limpar o Ranking
-            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
             atvs = atvs.filter(a => a.email !== emailSelecionado);
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
 
-            alert("Consultor e todo o seu histórico foram removidos com sucesso!");
-            
-            // Limpa os campos da ferramenta
+            alert("Consultor e todo o seu histórico de arquivos foram removidos com sucesso!");
             document.getElementById('input-redefinir-email').value = "";
             document.getElementById('input-redefinir-senha').value = "";
-            
-            // Força a reatualização da interface do gestor
             mostrarGestor();
         }
     }
