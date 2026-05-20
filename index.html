@@ -13,6 +13,13 @@
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         
+        /* Estilos específicos da Logo e Bloco Motivacional no Login */
+        .logo-container { text-align: center; margin-bottom: 15px; }
+        .logo-empresa { max-width: 180px; height: auto; object-fit: contain; }
+        .box-motivacional { background: #fdfefe; border: 1px solid #e5e8e8; border-radius: 6px; padding: 12px; margin: 15px 0 5px 0; text-align: center; }
+        .texto-motivacional { font-size: 0.88em; font-style: italic; color: #566573; margin: 0; line-height: 1.4; }
+        .autor-motivacional { font-size: 0.75em; color: #a6acaf; font-weight: bold; margin-top: 5px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+
         .item-atividade { padding: 15px; margin-bottom: 10px; border-radius: 4px; border-left: 5px solid #ccc; background: #fdfdfd; position: relative; }
         .status-pendente { border-left-color: var(--warning); background: #fffdf0; }
         .status-aprovado { border-left-color: var(--secondary); background: #f4faf6; }
@@ -40,11 +47,9 @@
         .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
         .card-premio-gestor { background: #d4edda; border-left: 5px solid #28a745; padding: 10px; margin: 8px 0; border-radius: 4px; font-size: 0.9em; color: #155724; }
         
-        /* Estilos da Legenda de Prêmios */
         .box-legenda-premios { background: #f4f6f7; border: 1px dashed #bdc3c7; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85em; color: #34495e; }
         .box-legenda-premios ul { margin: 5px 0 0 0; padding-left: 20px; list-style-type: square; }
 
-        /* Estilos do Sistema de Abas */
         .menu-abas { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .aba-btn { width: auto; padding: 10px 20px; background: #e2e8f0; color: #333; margin: 0; border-radius: 5px 5px 0 0; }
         .aba-btn.ativa { background: var(--primary); color: white; }
@@ -65,11 +70,20 @@
 <body>
 
     <div id="tela-login" class="card" style="max-width: 450px;">
-        <h2 style="text-align: center; color: var(--primary);">Grupo Status - Login</h2>
+        <div class="logo-container">
+            <img class="logo-empresa" src="https://static.wixstatic.com/media/cf72c4_63a805515a37450a86eefbe2a2f392db~mv2.png/v1/fill/w_308,h_158,al_c,q_85,enc_avif,quality_auto/Group%20427%20(1)%20(1).png" alt="Logo Grupo Status" onerror="this.style.display='none'">
+        </div>
+        <h2 style="text-align: center; color: var(--primary); margin-top: 0;">Portal Evolução - Login</h2>
+        
         <input type="email" id="login-email" placeholder="E-mail">
         <input type="password" id="login-senha" placeholder="Senha">
         <button onclick="fazerLogin()">Entrar</button>
         
+        <div class="box-motivacional">
+            <p id="texto-frase" class="texto-motivacional">Carregando dose de motivação para hoje...</p>
+            <span id="autor-frase" class="autor-frase"></span>
+        </div>
+
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')" style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
@@ -199,7 +213,7 @@
         </div>
 
         <div id="conteudo-aba-usuarios" class="hidden">
-            <h3>🔧 Painel de Controle Administrative</h3>
+            <h3>🔧 Painel de Controle Administrativo</h3>
             <div class="box-redefinicao">
                 <p style="font-size: 0.85em; color: #555; margin-top: 0;">Aqui você pode gerenciar os dados de acesso ou remover contas do sistema:</p>
                 
@@ -235,7 +249,36 @@
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
+    // --- LISTA DE FRASES MOTIVACIONAIS DIÁRIAS (UMA PARA CADA DIA) ---
+    const FRASES_MOTIVACIONAIS = [
+        { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
+        { texto: "Grandes conquistas começam com o compromisso de dar o seu melhor hoje.", autor: "Mentalidade Status" },
+        { texto: "Não espere por oportunidades, crie-as com o seu trabalho e dedicação.", autor: "Grupo Status" },
+        { texto: "A vontade de ganhar é importante, mas a vontade de se preparar é vital.", autor: "Joe Paterno" },
+        { texto: "Cada cliente é uma nova oportunidade de mostrar a nossa excelência.", autor: "Foco Comercial" },
+        { texto: "A força não vem da capacidade física, vem de uma vontade indomável.", autor: "Mahatma Gandhi" },
+        { texto: "Determinação hoje é o resultado extraordinário de amanhã na tabela.", autor: "Trilha de Evolução" },
+        { texto: "Seja a mudança que você deseja ver nos seus resultados comerciais.", autor: "Gestão Status" },
+        { texto: "A única maneira de fazer um excelente trabalho é amar o que você faz.", autor: "Steve Jobs" },
+        { texto: "Os problemas são oportunidades para demonstrarmos o nosso talento.", autor: "Duke Ellington" }
+    ];
+
+    // Função que calcula matematicamente qual frase exibir baseado no dia absoluto
+    function gerarFraseDoDia() {
+        const hoje = new Date();
+        // Converte o dia atual em um número único puro (carimbo de data)
+        const timestampDia = Math.floor(hoje.getTime() / (1000 * 60 * 60 * 24));
+        // Usa o resto da divisão para rodar a lista infinitamente sem estourar as frases
+        const indiceFrase = timestampDia % FRASES_MOTIVACIONAIS.length;
+        
+        const fraseSelecionada = FRASES_MOTIVACIONAIS[indiceFrase];
+        document.getElementById('texto-frase').innerText = `"${fraseSelecionada.texto}"`;
+        document.getElementById('autor-frase').innerText = `- ${fraseSelecionada.autor}`;
+    }
+
     window.onload = function() {
+        gerarFraseDoDia(); // Dispara a troca da frase motivacional do dia no login
+
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
             usuarioLogado = JSON.parse(usuarioSalvo);
@@ -394,7 +437,6 @@
         }
     }
 
-    // --- PAINEL DO CORRETOR COM LÓGICA DE REINICIALIZAÇÃO EM MÚLTIPLOS DE 1000 ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
@@ -402,18 +444,12 @@
         const resumoPts = obterPontosUsuario(usuarioLogado.email);
         const totalGeral = resumoPts.total;
         
-        // Salva os totais nas labels explicativas
         document.getElementById('pontos-total-user').innerText = totalGeral;
 
-        // MATEMÁTICA DO CICLO: Descobre o resto da divisão por 1000. 
-        // Se der 0 e o total for maior que 0, significa que ele está exatamente no topo de um ciclo (1000, 2000, etc.)
         let pontosNoCicloAtual = totalGeral % 1000;
-        if (pontosNoCicloAtual === 0 && totalGeral > 0) {
-            pontosNoCicloAtual = 1000; 
-        }
+        if (pontosNoCicloAtual === 0 && totalGeral > 0) { pontosNoCicloAtual = 1000; }
         document.getElementById('pontos-ciclo-user').innerText = pontosNoCicloAtual;
 
-        // Cálculos e cor da Barra de Progresso baseados no ciclo atual de 1000 pontos
         const barra = document.getElementById('barra-progresso');
         let porcentagem = (pontosNoCicloAtual / 1000) * 100;
         barra.style.width = porcentagem + "%";
@@ -422,22 +458,15 @@
         let matizCor = (pontosNoCicloAtual / 1000) * 120;
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
-        // PROCESSAMENTO DOS AVISOS DOS PRÊMIOS E FRASE DE REINICIALIZAÇÃO
         const boxPremio = document.getElementById('box-premio-alcançado');
         boxPremio.classList.add('hidden');
         boxPremio.innerHTML = "";
 
-        // Descobre quantas metas de 1000 pontos já foram concluídas por completo
         let ciclosCompletos = Math.floor(totalGeral / 1000);
-        
-        // Se o corretor pontuou exatamente no limite (ex: 1000, 2000), o cálculo acima conta um ciclo a mais antes da hora
-        if(totalGeral % 1000 === 0 && totalGeral > 0) {
-            ciclosCompletos = ciclosCompletos - 1;
-        }
+        if(totalGeral % 1000 === 0 && totalGeral > 0) { ciclosCompletos = ciclosCompletos - 1; }
 
         if (pontosNoCicloAtual >= 1000) {
             boxPremio.className = "card-premio";
-            // Lembrete dinâmico baseado em múltiplos de 1000 pts
             let metaAlcancadaAlerta = (ciclosCompletos + 1) * 1000;
             boxPremio.innerText = `🏆 Você já alcançou ${metaAlcancadaAlerta} pontos, vamos começar de novo?`;
             boxPremio.classList.remove('hidden');
@@ -455,14 +484,12 @@
             boxPremio.classList.remove('hidden');
         }
 
-        // Se ele já concluiu um ciclo inteiro mas ainda está no início do próximo (ex: 1150 pontos), exibe o lembrete fixo
         if(totalGeral > 1000 && pontosNoCicloAtual < 250) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = `🔄 Ciclo Anterior Concluído (${ciclosCompletos * 1000} pts)! Você iniciou uma nova contagem de prêmios. Boa sorte!`;
             boxPremio.classList.remove('hidden');
         }
 
-        // Histórico de renderização
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
@@ -534,7 +561,6 @@
         });
     }
 
-    // --- SISTEMA DE ALERTAS DO GESTOR COM RECONHECIMENTO DE REINÍCIO DE CICLOS ---
     function verificarPremiosParaGestor() {
         const containerAlertas = document.getElementById('alertas-premios-gestor');
         containerAlertas.innerHTML = "";
@@ -545,7 +571,6 @@
         corretores.forEach(c => {
             const pontosTotais = obterPontosUsuario(c.email).total;
             
-            // Separa os pontos reais do ciclo de 1000 atual
             let pontosNoCiclo = pontosTotais % 1000;
             if(pontosNoCiclo === 0 && pontosTotais > 0) { pontosNoCiclo = 1000; }
 
@@ -554,7 +579,6 @@
 
             let mensagemPremio = "";
 
-            // Alerta de metas dentro do ciclo atual
             if (pontosNoCiclo >= 1000) {
                 mensagemPremio = `🏆 <strong>${c.nome}</strong> atingiu a meta de ${pontosTotais} pts e completou o <strong>4º Prêmio (Final do ciclo)!</strong>`;
             } else if (pontosNoCiclo >= 750) {
@@ -570,7 +594,6 @@
                 containerAlertas.innerHTML += `<div class="card-premio-gestor">${mensagemPremio}</div>`;
             }
 
-            // AVISO AO GESTOR: Se o corretor passou de 1000 e reiniciou a contagem (ex: está com 1100)
             if (numDoCicloAtual > 0 && pontosNoCiclo < 250) {
                 alertasGerados++;
                 containerAlertas.innerHTML += `
