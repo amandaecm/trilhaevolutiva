@@ -40,6 +40,10 @@
         .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
         .card-premio-gestor { background: #d4edda; border-left: 5px solid #28a745; padding: 10px; margin: 8px 0; border-radius: 4px; font-size: 0.9em; color: #155724; }
         
+        /* Estilos da Legenda de Prêmios */
+        .box-legenda-premios { background: #f4f6f7; border: 1px dashed #bdc3c7; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85em; color: #34495e; }
+        .box-legenda-premios ul { margin: 5px 0 0 0; padding-left: 20px; list-style-type: square; }
+
         /* Estilos do Sistema de Abas */
         .menu-abas { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
         .aba-btn { width: auto; padding: 10px 20px; background: #e2e8f0; color: #333; margin: 0; border-radius: 5px 5px 0 0; }
@@ -49,7 +53,6 @@
         .grid-redefinicao { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         @media(max-width: 600px) { .grid-redefinicao { grid-template-columns: 1fr; } }
 
-        /* Estilo para a caixa de observação de e-mail */
         .box-observacao-email { background: #eaf2f8; border-left: 5px solid var(--accent); padding: 15px; margin: 15px 0; border-radius: 4px; font-size: 0.9em; color: #2471a3; line-height: 1.5; }
 
         @keyframes pulse {
@@ -105,9 +108,20 @@
     <div id="painel-corretor" class="card hidden" style="max-width: 750px;">
         <h2>Painel do Corretor</h2>
         
+        <div class="box-legenda-premios">
+            🏅 <strong>Pontuação de prêmios (Ciclo de 1000 pts):</strong>
+            <ul>
+                <li><strong>250 pontos:</strong> 1° Prêmio</li>
+                <li><strong>500 pontos:</strong> 2° Prêmio</li>
+                <li><strong>750 pontos:</strong> 3° Prêmio</li>
+                <li><strong>1000 pontos:</strong> 4° Prêmio, prêmio final!!!</li>
+            </ul>
+        </div>
+        
         <div class="perfil-info">
             Olá, <strong id="nome-user"></strong>! Acompanhe seu progresso na Trilha.<br>
-            Pontuação Atual Aprovada: <strong id="pontos-total-user">0</strong> / 1000 pts
+            Pontuação Geral Acumulada: <strong id="pontos-total-user">0</strong> pts<br>
+            Contagem do Ciclo Atual: <strong id="pontos-ciclo-user">0</strong> / 1000 pts
             
             <div class="container-progresso">
                 <div id="barra-progresso" class="barra-dinamica">0%</div>
@@ -141,13 +155,20 @@
     <div id="painel-gestor" class="card hidden">
         <h2>Gestão Comercial - Grupo Status</h2>
         
+        <div class="box-legenda-premios">
+            🏅 <strong>Pontuação de prêmios de referência:</strong>
+            <ul>
+                <li><strong>250 pontos:</strong> 1° Prêmio | <strong>500 pontos:</strong> 2° Prêmio | <strong>750 pontos:</strong> 3° Prêmio | <strong>1000 pontos:</strong> 4° Prêmio, prêmio final!!!</li>
+            </ul>
+        </div>
+        
         <div class="menu-abas">
             <button id="btn-aba-geral" class="aba-btn ativa" onclick="mudarAbaGestor('geral')">📋 Acompanhamento Geral</button>
             <button id="btn-aba-usuarios" class="aba-btn" onclick="mudarAbaGestor('usuarios')">👥 Gerenciar Consultores</button>
         </div>
 
         <div id="conteudo-aba-geral">
-            <h3>📢 Alertas de Premiações Alcançadas:</h3>
+            <h3>📢 Alertas de Premiações Alcançadas & Ciclos:</h3>
             <div id="alertas-premios-gestor" style="margin-bottom: 20px;"></div>
             <hr>
 
@@ -170,7 +191,7 @@
                         <th>Cursos</th>
                         <th>Networking</th>
                         <th>Redes Sociais</th>
-                        <th class="col-destaque">Total Pontos</th>
+                        <th class="col-destaque">Total Pontos Geral</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-ranking"></tbody>
@@ -178,7 +199,7 @@
         </div>
 
         <div id="conteudo-aba-usuarios" class="hidden">
-            <h3>🔧 Painel de Controle Administrativo</h3>
+            <h3>🔧 Painel de Controle Administrative</h3>
             <div class="box-redefinicao">
                 <p style="font-size: 0.85em; color: #555; margin-top: 0;">Aqui você pode gerenciar os dados de acesso ou remover contas do sistema:</p>
                 
@@ -265,7 +286,6 @@
         return resumo;
     }
 
-    // --- FUNÇÃO DE CADASTRO SIMPLIFICADA SEM ARQUIVOS ---
     function cadastrarAtividade() {
         const btn = document.getElementById('btn-enviar');
         const tipo = document.getElementById('tipo-atividade').value;
@@ -327,7 +347,7 @@
         } else alert("Dados incorretos");
     }
 
-    function ejecutarEsqueceuSenha() {
+    function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const caixaResposta = document.getElementById('resposta-recuperacao');
         const textoResposta = document.getElementById('texto-resposta-recuperacao');
@@ -374,41 +394,75 @@
         }
     }
 
+    // --- PAINEL DO CORRETOR COM LÓGICA DE REINICIALIZAÇÃO EM MÚLTIPLOS DE 1000 ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
         
         const resumoPts = obterPontosUsuario(usuarioLogado.email);
-        const total = resumoPts.total;
+        const totalGeral = resumoPts.total;
         
-        document.getElementById('pontos-total-user').innerText = total;
+        // Salva os totais nas labels explicativas
+        document.getElementById('pontos-total-user').innerText = totalGeral;
 
+        // MATEMÁTICA DO CICLO: Descobre o resto da divisão por 1000. 
+        // Se der 0 e o total for maior que 0, significa que ele está exatamente no topo de um ciclo (1000, 2000, etc.)
+        let pontosNoCicloAtual = totalGeral % 1000;
+        if (pontosNoCicloAtual === 0 && totalGeral > 0) {
+            pontosNoCicloAtual = 1000; 
+        }
+        document.getElementById('pontos-ciclo-user').innerText = pontosNoCicloAtual;
+
+        // Cálculos e cor da Barra de Progresso baseados no ciclo atual de 1000 pontos
         const barra = document.getElementById('barra-progresso');
-        let porcentagem = Math.min((total / 1000) * 100, 100);
+        let porcentagem = (pontosNoCicloAtual / 1000) * 100;
         barra.style.width = porcentagem + "%";
         barra.innerText = Math.round(porcentagem) + "%";
 
-        let matizCor = Math.min((total / 1000) * 120, 120);
+        let matizCor = (pontosNoCicloAtual / 1000) * 120;
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
+        // PROCESSAMENTO DOS AVISOS DOS PRÊMIOS E FRASE DE REINICIALIZAÇÃO
         const boxPremio = document.getElementById('box-premio-alcançado');
         boxPremio.classList.add('hidden');
         boxPremio.innerHTML = "";
 
-        if (total >= 1000) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
-        } else if (total >= 750) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 500) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 250) {
-            boxPremio.className = "card-premio";
-            boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
+        // Descobre quantas metas de 1000 pontos já foram concluídas por completo
+        let ciclosCompletos = Math.floor(totalGeral / 1000);
+        
+        // Se o corretor pontuou exatamente no limite (ex: 1000, 2000), o cálculo acima conta um ciclo a mais antes da hora
+        if(totalGeral % 1000 === 0 && totalGeral > 0) {
+            ciclosCompletos = ciclosCompletos - 1;
         }
 
+        if (pontosNoCicloAtual >= 1000) {
+            boxPremio.className = "card-premio";
+            // Lembrete dinâmico baseado em múltiplos de 1000 pts
+            let metaAlcancadaAlerta = (ciclosCompletos + 1) * 1000;
+            boxPremio.innerText = `🏆 Você já alcançou ${metaAlcancadaAlerta} pontos, vamos começar de novo?`;
+            boxPremio.classList.remove('hidden');
+        } else if (pontosNoCicloAtual >= 750) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa do ciclo atual, consulte sua gestão.";
+            boxPremio.classList.remove('hidden');
+        } else if (pontosNoCicloAtual >= 500) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa do ciclo atual, consulte sua gestão.";
+            boxPremio.classList.remove('hidden');
+        } else if (pontosNoCicloAtual >= 250) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa do ciclo atual, consulte sua gestão.";
+            boxPremio.classList.remove('hidden');
+        }
+
+        // Se ele já concluiu um ciclo inteiro mas ainda está no início do próximo (ex: 1150 pontos), exibe o lembrete fixo
+        if(totalGeral > 1000 && pontosNoCicloAtual < 250) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = `🔄 Ciclo Anterior Concluído (${ciclosCompletos * 1000} pts)! Você iniciou uma nova contagem de prêmios. Boa sorte!`;
+            boxPremio.classList.remove('hidden');
+        }
+
+        // Histórico de renderização
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
@@ -475,11 +529,12 @@
                 <td>${r.cur} pts</td>
                 <td>${r.net} pts</td>
                 <td>${r.rs} pts</td>
-                <td class="col-destaque">${r.total} pts</td>
+                <td class="col-destaque">${r.total} pts Total</td>
             </tr>`;
         });
     }
 
+    // --- SISTEMA DE ALERTAS DO GESTOR COM RECONHECIMENTO DE REINÍCIO DE CICLOS ---
     function verificarPremiosParaGestor() {
         const containerAlertas = document.getElementById('alertas-premios-gestor');
         containerAlertas.innerHTML = "";
@@ -488,27 +543,45 @@
         let alertasGerados = 0;
 
         corretores.forEach(c => {
-            const pontos = obterPontosUsuario(c.email).total;
-            let messagePremio = "";
+            const pontosTotais = obterPontosUsuario(c.email).total;
+            
+            // Separa os pontos reais do ciclo de 1000 atual
+            let pontosNoCiclo = pontosTotais % 1000;
+            if(pontosNoCiclo === 0 && pontosTotais > 0) { pontosNoCiclo = 1000; }
 
-            if (pontos >= 1000) {
-                messagePremio = `🏆 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>4º Prêmio (Final)!</strong>`;
-            } else if (pontos >= 750) {
-                messagePremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>3º Prêmio!</strong>`;
-            } else if (pontos >= 500) {
-                messagePremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>2º Prêmio!</strong>`;
-            } else if (pontos >= 250) {
-                messagePremio = `🎁 <strong>${c.nome}</strong> atingiu ${pontos} pts e liberou o <strong>1º Prêmio!</strong>`;
+            let numDoCicloAtual = Math.floor(pontosTotais / 1000);
+            if(pontosTotais % 1000 === 0 && pontosTotais > 0) { numDoCicloAtual = numDoCicloAtual - 1; }
+
+            let mensagemPremio = "";
+
+            // Alerta de metas dentro do ciclo atual
+            if (pontosNoCiclo >= 1000) {
+                mensagemPremio = `🏆 <strong>${c.nome}</strong> atingiu a meta de ${pontosTotais} pts e completou o <strong>4º Prêmio (Final do ciclo)!</strong>`;
+            } else if (pontosNoCiclo >= 750) {
+                mensagemPremio = `🎁 <strong>${c.nome}</strong> acumulou ${pontosNoCiclo} pts neste ciclo (Total: ${pontosTotais} pts) e liberou o <strong>3º Prêmio!</strong>`;
+            } else if (pontosNoCiclo >= 500) {
+                mensagemPremio = `🎁 <strong>${c.nome}</strong> acumulou ${pontosNoCiclo} pts neste ciclo (Total: ${pontosTotais} pts) e liberou o <strong>2º Prêmio!</strong>`;
+            } else if (pontosNoCiclo >= 250) {
+                mensagemPremio = `🎁 <strong>${c.nome}</strong> acumulou ${pontosNoCiclo} pts neste ciclo (Total: ${pontosTotais} pts) e liberou o <strong>1º Prêmio!</strong>`;
             }
 
-            if (messagePremio !== "") {
+            if (mensagemPremio !== "") {
                 alertasGerados++;
-                containerAlertas.innerHTML += `<div class="card-premio-gestor">${messagePremio}</div>`;
+                containerAlertas.innerHTML += `<div class="card-premio-gestor">${mensagemPremio}</div>`;
+            }
+
+            // AVISO AO GESTOR: Se o corretor passou de 1000 e reiniciou a contagem (ex: está com 1100)
+            if (numDoCicloAtual > 0 && pontosNoCiclo < 250) {
+                alertasGerados++;
+                containerAlertas.innerHTML += `
+                    <div class="card-premio-gestor" style="background: #e2f0fe; border-left-color: var(--accent); color: #1a5276;">
+                        🔄 <strong>Aviso de Reinício:</strong> O consultor <strong>${c.nome}</strong> completou o ciclo de ${numDoCicloAtual * 1000} pontos e <strong>está começando a contagem de prêmios novamente!</strong> (Ciclo atual: ${numDoCicloAtual + 1}º)
+                    </div>`;
             }
         });
 
         if (alertasGerados === 0) {
-            containerAlertas.innerHTML = "<p style='color: gray; font-style: italic; font-size:0.9em;'>Nenhum consultor atingiu a meta mínima de prêmios (250 pts) ainda.</p>";
+            containerAlertas.innerHTML = "<p style='color: gray; font-style: italic; font-size:0.9em;'>Nenhum consultor atingiu metas ou reiniciou ciclos recentemente.</p>";
         }
     }
 
@@ -523,7 +596,7 @@
         }
 
         let csvConteudo = "\uFEFF"; 
-        csvConteudo += "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos\n";
+        csvConteudo += "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos Geral\n";
 
         corretoresRankeados.forEach((r, index) => {
             csvConteudo += `${index + 1}º;${r.nome};${r.vg} pts;${r.vc} pts;${r.cur} pts;${r.net} pts;${r.rs} pts;${r.total} pts\n`;
