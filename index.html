@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Evolução - Grupo Status</title>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
@@ -29,7 +28,6 @@
         .btn-reprovar { background: var(--danger); }
         .btn-ver { background: var(--accent); }
         
-        /* Botão de excluir atividade estilo lixeira */
         .btn-excluir { background: var(--danger); float: right; padding: 5px 10px; width: auto; margin: 0; font-size: 0.8em; }
         .clear-float { clear: both; }
 
@@ -43,6 +41,11 @@
         .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
         .card-premio-gestor { background: #d4edda; border-left: 5px solid #28a745; padding: 10px; margin: 8px 0; border-radius: 4px; font-size: 0.9em; color: #155724; }
         
+        /* Estilos da nova ferramenta de redefinição */
+        .box-redefinicao { background: #f8f9fa; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin-top: 15px; }
+        .grid-redefinicao { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media(max-width: 600px) { .grid-redefinicao { grid-template-columns: 1fr; } }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.01); box-shadow: 0 4px 10px rgba(255, 193, 7, 0.2); }
@@ -59,7 +62,7 @@
         <button onclick="fazerLogin()">Entrar</button>
         
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
-        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')", style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')" style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
 
     <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
@@ -84,9 +87,12 @@
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
         <h2>Recuperar Senha</h2>
-        <p style="font-size: 0.85em; color: #555; text-align: center;">Informe o e-mail utilizado no seu cadastro para recuperar seus dados de acesso.</p>
-        <input type="email" id="esqueceu-email" placeholder="Digite seu E-mail">
-        <button id="btn-recuperar" onclick="executarEsqueceuSenha()" style="background: var(--primary);">Enviar Credenciais</button>
+        <p style="font-size: 0.95em; color: #333; text-align: center; line-height: 1.5;">
+            ⚠️ <strong>Atenção Consultor:</strong><br>
+            A recuperação automática por e-mail foi desativada por segurança.<br><br>
+            Por favor, <strong>entre em contato diretamente com a sua Gestão Comercial</strong> para solicitar a alteração ou redefinição imediata de suas credenciais de acesso.
+        </p>
+        <br>
         <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
     </div>
 
@@ -129,9 +135,31 @@
     <div id="painel-gestor" class="card hidden">
         <h2>Gestão Comercial - Grupo Status</h2>
         
-        <!-- Notificações de prêmios para o gestor -->
         <h3>📢 Alertas de Premiações Alcançadas:</h3>
         <div id="alertas-premios-gestor" style="margin-bottom: 20px;"></div>
+        <hr>
+
+        <!-- NOVA FERRAMENTA: REDEFINIÇÃO DE CREDENCIAIS DOS CONSULTORES -->
+        <h3>🔧 Painel de Controle: Redefinir Acesso de Consultores</h3>
+        <div class="box-redefinicao">
+            <p style="font-size: 0.85em; color: #555; margin-top: 0;">Selecione o consultor cadastrado para modificar suas credenciais de login instantaneamente:</p>
+            <label style="font-weight: bold; font-size: 0.85em;">Escolha o Consultor:</label>
+            <select id="select-redefinir-usuario" onchange="carregarDadosUsuarioParaGestor()">
+                <option value="">-- Selecione um Consultor --</option>
+            </select>
+            
+            <div class="grid-redefinicao">
+                <div>
+                    <label style="font-weight: bold; font-size: 0.85em;">Novo E-mail:</label>
+                    <input type="email" id="input-redefinir-email" placeholder="Ex: novoemail@status.com">
+                </div>
+                <div>
+                    <label style="font-weight: bold; font-size: 0.85em;">Nova Senha:</label>
+                    <input type="text" id="input-redefinir-senha" placeholder="Digite a nova senha">
+                </div>
+            </div>
+            <button onclick="salvarRedefinicaoGestor()" style="background: var(--accent); margin-top: 10px;">Atualizar Dados de Acesso</button>
+        </div>
         <hr>
 
         <h3>Pendências para Avaliação:</h3>
@@ -140,7 +168,6 @@
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
             <h3>🏆 Ranking de Corretores (Análise de Performance)</h3>
-            <!-- Botão para baixar relatório em CSV -->
             <button onclick="exportarRankingCSV()" style="background: #27ae60; width: auto; padding: 10px 20px; margin: 0;">📥 Baixar Ranking (CSV)</button>
         </div>
 
@@ -165,14 +192,6 @@
 
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
-
-    const EMAILJS_SERVICE_ID = "COLE_AQUI_SEU_SERVICE_ID";
-    const EMAILJS_TEMPLATE_ID = "COLE_AQUI_SEU_TEMPLATE_ID";
-    const EMAILJS_PUBLIC_KEY = "COLE_AQUI_SUA_PUBLIC_KEY";
-
-    if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
-        emailjs.init(EMAILJS_PUBLIC_KEY);
-    }
 
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
@@ -302,46 +321,16 @@
         } else alert("Dados incorretos");
     }
 
-    function executarEsqueceuSenha() {
-        const emailInformado = document.getElementById('esqueceu-email').value.trim();
-        const btn = document.getElementById('btn-recuperar');
-        if(!emailInformado) return alert("Digite seu e-mail.");
-        const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
-
-        btn.disabled = true;
-        if(EMAILJS_SERVICE_ID.includes("service_5rt8wnw")) {
-            setTimeout(() => {
-                alert("Serviço externo inativo. Solicite suporte redefinindo direto na gestão.");
-                alternarTelas('tela-esqueceu', 'tela-login');
-                btn.disabled = false;
-            }, 1000);
-            return;
-        }
-
-        if(usuarioEncontrado) {
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: usuarioEncontrado.email, senha_usuario: usuarioEncontrado.senha })
-            .then(() => { alert("Instruções transmitidas se o e-mail constar em nossa base."); alternarTelas('tela-esqueceu', 'tela-login'); })
-            .catch(() => alert("Falha na transmissão."))
-            .finally(() => btn.disabled = false);
-        } else {
-            setTimeout(() => { alert("Processado."); alternarTelas('tela-esqueceu', 'tela-login'); btn.disabled = false; }, 1200);
-        }
-    }
-
-    // --- NOVA FUNÇÃO GLOBAL PARA EXCLUSÃO DE ATIVIDADES ---
     function apagarAtividade(id) {
-        // Alerta em vermelho por meio da caixa nativa de confirmação do navegador
         const confirmacao = confirm("⚠️ Você realmente quer apagar esta atividade?");
         
         if (confirmacao) {
             let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-            // Filtra removendo a atividade com o id selecionado
             atvs = atvs.filter(a => a.id != id);
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             
             alert("Pontuação extraída com sucesso!");
             
-            // Atualiza a tela correspondente baseado em quem está logado
             if (usuarioLogado.cargo === 'gestor') {
                 mostrarGestor();
             } else {
@@ -392,7 +381,6 @@
         minhas.reverse().forEach(a => {
             let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
             
-            // Adicionado botão da lixeira (excluir) no histórico do consultor
             hist.innerHTML += `
                 <div class="item-atividade status-${a.status}">
                     <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
@@ -414,7 +402,6 @@
             let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
             let botaoVer = a.arquivo ? (a.arquivo.startsWith("data:application/pdf") ? `<button class="btn-controle btn-ver" onclick="abrirPdfJanela('${a.id}')">Ver PDF</button>` : `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`) : `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem mídia]</span>`;
             
-            // Adicionado botão da lixeira também nas pendências para o Gestor resolver direto se necessário
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
                 <strong>${a.nome}</strong> enviou: ${labelTipo} (${a.desc})<br><br>
@@ -425,9 +412,9 @@
             </div>`;
         });
         
-        // Renderiza o Ranking e roda a verificação dos prêmios alcançados para o Gestor ver
         renderRanking();
         verificarPremiosParaGestor();
+        atualizarSelectConsultoresGestor(); // Alimenta a ferramenta de redefinição com os corretores salvos
     }
 
     function abrirPdfJanela(id) {
@@ -467,7 +454,6 @@
         });
     }
 
-    // --- NOVA FUNÇÃO: VERIFICA PREMIAÇÕES DOS CONSULTORES NO PAINEL GESTOR ---
     function verificarPremiosParaGestor() {
         const containerAlertas = document.getElementById('alertas-premios-gestor');
         containerAlertas.innerHTML = "";
@@ -476,7 +462,7 @@
         let alertasGerados = 0;
 
         corretores.forEach(c => {
-            const pontos = obterPontosUsuario(c.email).total;https://github.com/amandaecm/trilhaevolutiva/blob/main/index.html
+            const pontos = obterPontosUsuario(c.email).total;
             let mensagemPremio = "";
 
             if (pontos >= 1000) {
@@ -500,7 +486,6 @@
         }
     }
 
-    // --- NOVA FUNÇÃO: EXPORTAR RANKING PARA CSV ---
     function exportarRankingCSV() {
         let corretoresRankeados = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
             const r = obterPontosUsuario(c.email);
@@ -511,16 +496,13 @@
             return alert("Não há dados de corretores para exportar.");
         }
 
-        // Cabeçalho estruturado para o arquivo CSV
-        let csvConteudo = "\uFEFF"; // Código BOM para forçar o Excel a reconhecer caracteres como acentos (UTF-8)
+        let csvConteudo = "\uFEFF"; 
         csvConteudo += "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos\n";
 
-        // Preenche as linhas com as informações tratadas
         corretoresRankeados.forEach((r, index) => {
             csvConteudo += `${index + 1}º;${r.nome};${r.vg} pts;${r.vc} pts;${r.cur} pts;${r.net} pts;${r.rs} pts;${r.total} pts\n`;
         });
 
-        // Cria o gatilho invisível de download no navegador
         const blob = new Blob([csvConteudo], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
@@ -532,6 +514,86 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+    // --- NOVAS FUNÇÕES: GERENCIAMENTO DE ACESSOS PELO GESTOR ---
+    
+    // Alimenta o menu do Gestor dinamicamente com os corretores da base
+    function atualizarSelectConsultoresGestor() {
+        const select = document.getElementById('select-redefinir-usuario');
+        
+        // Reseta o select mantendo apenas a opção padrão
+        select.innerHTML = '<option value="">-- Selecione um Consultor --</option>';
+        
+        let corretores = listaUsuarios.filter(u => u.cargo === 'corretor');
+        
+        corretores.forEach(c => {
+            select.innerHTML += `<option value="${c.email}">${c.nome} (${c.email})</option>`;
+        });
+    }
+
+    // Preenche os campos automaticamente quando o gestor escolhe um nome da lista
+    function carregarDadosUsuarioParaGestor() {
+        const emailSelecionado = document.getElementById('select-redefinir-usuario').value;
+        const inputEmail = document.getElementById('input-redefinir-email');
+        const inputSenha = document.getElementById('input-redefinir-senha');
+        
+        if(!emailSelecionado) {
+            inputEmail.value = "";
+            inputSenha.value = "";
+            return;
+        }
+        
+        const usuario = listaUsuarios.find(u => u.email === emailSelecionado);
+        if(usuario) {
+            inputEmail.value = usuario.email;
+            inputSenha.value = usuario.senha;
+        }
+    }
+
+    // Grava as alterações feitas pelo Gestor na lista geral e corrige o histórico de atividades vinculadas se o e-mail mudar
+    function salvarRedefinicaoGestor() {
+        const emailAntigoChave = document.getElementById('select-redefinir-usuario').value;
+        const novoEmail = document.getElementById('input-redefinir-email').value.trim();
+        const novaSenha = document.getElementById('input-redefinir-senha').value;
+        
+        if(!emailAntigoChave) return alert("Selecione um consultor primeiro!");
+        if(!novoEmail || !novaSenha) return alert("Os campos E-mail e Senha não podem ficar vazios!");
+        
+        // Verifica se o novo e-mail já pertence a OUTRO usuário cadastrado para evitar duplicidades
+        if(novoEmail !== emailAntigoChave && listaUsuarios.some(u => u.email === novoEmail)) {
+            return alert("Erro: Esse novo e-mail já está cadastrado para outro usuário!");
+        }
+        
+        // 1. Atualiza dados cadastrais do Usuário
+        listaUsuarios = listaUsuarios.map(u => {
+            if(u.email === emailAntigoChave) {
+                return { ...u, email: novoEmail, senha: novaSenha };
+            }
+            return u;
+        });
+        localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
+        
+        // 2. Se o e-mail mudou, precisamos atualizar também o vínculo histórico de pontuações dele
+        if(emailAntigoChave !== novoEmail) {
+            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+            atvs = atvs.map(a => {
+                if(a.email === emailAntigoChave) {
+                    return { ...a, email: novoEmail };
+                }
+                return a;
+            });
+            localStorage.setItem('atividades_status', JSON.stringify(atvs));
+        }
+        
+        alert("Credenciais atualizadas com sucesso!");
+        
+        // Limpa os campos de controle do painel
+        document.getElementById('input-redefinir-email').value = "";
+        document.getElementById('input-redefinir-senha').value = "";
+        
+        // Recarrega o painel do gestor atualizado
+        mostrarGestor();
     }
 
     function logout() { 
