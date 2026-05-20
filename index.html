@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Evolução - Grupo Status</title>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
@@ -32,19 +32,11 @@
         .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
         .label-seguranca { color: var(--danger); font-weight: bold; font-size: 0.85em; }
 
-        /* Gamificação */
+        /* Componentes de Gamificação */
         .container-progresso { background: #e0e0e0; border-radius: 20px; height: 24px; width: 100%; margin: 15px 0; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
         .barra-dinamica { height: 100%; width: 0%; transition: width 0.8s ease-in-out, background-color 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
-        .btn-resgate { background: #ffc107; color: #333; margin-top: 10px; font-size: 0.9em; border: 1px solid #d39e00; width: auto; padding: 8px 20px; }
-        .btn-resgate:hover { background: #e0a800; }
+        .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
         
-        /* Notificações Gestor */
-        .notif-premio { padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; font-size: 0.9em; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .premio-aguardando { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
-        .premio-entregue { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; opacity: 0.7; }
-        .badge-status { font-size: 0.8em; padding: 3px 8px; border-radius: 10px; color: white; }
-
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.01); box-shadow: 0 4px 10px rgba(255, 193, 7, 0.2); }
@@ -61,7 +53,7 @@
         <button onclick="fazerLogin()">Entrar</button>
         
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
-        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')">Esqueceu sua senha?</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')", style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
 
     <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
@@ -81,7 +73,7 @@
         <input type="password" id="cad-chave-empresa" placeholder="Digite a Chave de Acesso da Construtora">
         
         <button onclick="realizarCadastro()" style="background: var(--secondary);">Validar e Cadastrar</button>
-        <div class="link-alternar" onclick="alternarTelas('tela-cadastro', 'tela-login')", style="color: var(--danger);">Voltar para o Login</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-cadastro', 'tela-login')" style="color: var(--danger);">Voltar para o Login</div>
     </div>
 
     <div id="tela-esqueceu" class="card hidden" style="max-width: 450px;">
@@ -107,7 +99,7 @@
         </div>
         
         <h3>Enviar Nova Atividade</h3>
-        <select id="tipo-atividade">
+        <select id="tipo-atividade" onchange="toggleUpload()">
             <option value="Venda_Gestor">Venda - Lead da Construtora [+100 pts]</option>
             <option value="Venda_Corretor">Venda - Lead Tráfego Próprio [+150 pts]</option>
             <option value="Curso">Curso / Palestra Concluída [+75 pts]</option>
@@ -116,7 +108,7 @@
         </select>
         <input type="text" id="desc-atividade" placeholder="Descrição (Ex: Lote B-12 Bougainville ou Nome do Curso)">
         
-        <div>
+        <div id="campo-upload">
             <label style="font-weight: bold; font-size: 0.9em;">Anexar Comprovante (Imagem ou PDF):</label>
             <input type="file" id="arquivo-input" accept="image/*,.pdf">
         </div>
@@ -130,20 +122,10 @@
 
     <div id="painel-gestor" class="card hidden">
         <h2>Gestão Comercial - Grupo Status</h2>
-        
-        <h3 style="color: var(--primary); display: flex; align-items: center; gap: 8px;">🎁 Prêmios a Entregar (Monitor de Metas)</h3>
-        <div id="lista-premios-gestor" style="margin-bottom: 25px;"></div>
-        <hr>
-
         <h3>Pendências para Avaliação:</h3>
         <div id="lista-pendentes"></div>
         <hr>
-        
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
-            <h3>🏆 Ranking de Corretores (Análise de Performance)</h3>
-            <button onclick="exportarRankingExcel()" style="background: var(--secondary); width: auto; padding: 10px 20px; font-size: 0.9em;">📥 Baixar Ranking em Excel</button>
-        </div>
-        
+        <h3>🏆 Ranking de Corretores (Análise de Performance da Gestora)</h3>
         <table class="ranking-table">
             <thead>
                 <tr>
@@ -166,41 +148,37 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
-    const EMAILJS_SERVICE_ID = "service_5rt8wnw";
-    const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
-    const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
+    const EMAILJS_SERVICE_ID = "COLE_AQUI_SEU_SERVICE_ID";
+    const EMAILJS_TEMPLATE_ID = "COLE_AQUI_SEU_TEMPLATE_ID";
+    const EMAILJS_PUBLIC_KEY = "COLE_AQUI_SUA_PUBLIC_KEY";
 
-    if(typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY) {
+    if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }
 
-    let listaUsuarios = [];
+    let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
     window.onload = function() {
-        try {
-            listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
-            const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
-
-            if (usuarioSalvo) {
-                usuarioLogado = JSON.parse(usuarioSalvo);
-                document.getElementById('tela-login').classList.add('hidden');
-                usuarioLogado.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
-            } else {
-                document.getElementById('tela-login').classList.remove('hidden');
-                document.getElementById('tela-cadastro').classList.add('hidden');
-                document.getElementById('tela-esqueceu').classList.add('hidden');
-                document.getElementById('painel-corretor').classList.add('hidden');
-                document.getElementById('painel-gestor').classList.add('hidden');
-            }
-        } catch (err) {
-            console.error("Erro na inicialização:", err);
+        const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
+        if (usuarioSalvo) {
+            usuarioLogado = JSON.parse(usuarioSalvo);
+            document.getElementById('tela-login').classList.add('hidden');
+            usuarioLogado.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
+        } else {
+            document.getElementById('tela-login').classList.remove('hidden');
         }
     };
 
     function alternarTelas(esc, mos) {
         document.getElementById(esc).classList.add('hidden');
         document.getElementById(mos).classList.remove('hidden');
+    }
+
+    function toggleUpload() {
+        const t = document.getElementById('tipo-atividade').value;
+        // Agora todas exigem anexo exceto se quiser mudar alguma regra específica
+        document.getElementById('campo-upload').className = '';
     }
 
     function lerArquivoDireto(file) {
@@ -212,9 +190,10 @@
         });
     }
 
+    // --- CÁLCULO INDIVIDUAL DETALHADO ---
     function obterPontosUsuario(email) {
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-        const aprovadas = atvs.filter(a => a.status === 'aprovado' && a.email === email);
+        const aprovadas = atvs.filter(a => a.email === email && a.status === 'aprovado');
         
         let resumo = { vg: 0, vc: 0, cur: 0, net: 0, rs: 0, total: 0 };
         aprovadas.forEach(a => {
@@ -236,14 +215,14 @@
         let arquivoBase64 = null;
         let exibiuAvisoTamanho = false;
 
-        if (!desc) return alert("Por favor, descreva a atividade");
+        if (!desc) return alert("Descreva a atividade");
         
         btn.disabled = true;
         btn.innerText = "Registrando...";
 
         try {
-            if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                const arquivoOriginal = fileInput.files; // CORREÇÃO: Resgatando o arquivo único corretamente
+            if (fileInput.files.length > 0) {
+                const arquivoOriginal = fileInput.files;
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -262,9 +241,9 @@
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             
             if (exibiuAvisoTamanho) {
-                alert("Enviado em formato de texto! Como o arquivo superou 1.5MB, apresente o comprovante original à gerência.");
+                alert("Enviado em formato de texto! Como o arquivo superou 1.5MB, valide a imagem diretamente com a gerência.");
             } else {
-                alert("Atividade enviada com sucesso!");
+                alert("Atividade enviada com sucesso para análise!");
             }
             
             document.getElementById('desc-atividade').value = "";
@@ -272,7 +251,7 @@
             mostrarCorretor();
 
         } catch (e) {
-            alert("Erro ao ler o arquivo local.");
+            alert("Erro ao ler o arquivo.");
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Atividade";
@@ -287,116 +266,93 @@
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
         if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave da Construtora incorreta!");
-        
-        listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
         if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já está registrado.");
         
         listaUsuarios.push({ nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value });
         localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
-        alert("Conta criada com sucesso!"); 
+        alert("Conta criada!"); 
         alternarTelas('tela-cadastro', 'tela-login');
     }
 
     function fazerLogin() {
         const e = document.getElementById('login-email').value.trim();
         const s = document.getElementById('login-senha').value;
-        
-        if(!e || !s) return alert("Preencha e-mail e senha!");
-        
-        listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
         const u = listaUsuarios.find(user => user.email === e && user.senha === s);
-        
         if (u) {
             usuarioLogado = u;
             sessionStorage.setItem('usuario_logado_status', JSON.stringify(u));
             document.getElementById('tela-login').classList.add('hidden');
             u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
-        } else {
-            alert("E-mail ou senha incorretos");
-        }
+        } else alert("Dados incorretos");
     }
 
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const btn = document.getElementById('btn-recuperar');
-        if(!emailInformado) return alert("Por favor, digite seu e-mail.");
-        
+        if(!emailInformado) return alert("Digite seu e-mail.");
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
+
         btn.disabled = true;
+        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
+            setTimeout(() => {
+                alert("Serviço externo inativo. Solicite suporte redefinindo direto na gestão.");
+                alternarTelas('tela-esqueceu', 'tela-login');
+                btn.disabled = false;
+            }, 1000);
+            return;
+        }
 
         if(usuarioEncontrado) {
             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: usuarioEncontrado.email, senha_usuario: usuarioEncontrado.senha })
-            .then(() => { alert("As credenciais foram transmitidas de forma privada para sua caixa de entrada."); alternarTelas('tela-esqueceu', 'tela-login'); })
-            .catch(() => alert("Falha ao comunicar com o servidor de e-mail. Solicite redefinição manual à Gestora."))
+            .then(() => { alert("Instruções transmitidas se o e-mail constar em nossa base."); alternarTelas('tela-esqueceu', 'tela-login'); })
+            .catch(() => alert("Falha na transmissão."))
             .finally(() => btn.disabled = false);
         } else {
-            setTimeout(() => { alert("Processado. Verifique sua caixa de entrada."); alternarTelas('tela-esqueceu', 'tela-login'); btn.disabled = false; }, 1000);
+            setTimeout(() => { alert("Processado."); alternarTelas('tela-esqueceu', 'tela-login'); btn.disabled = false; }, 1200);
         }
     }
 
-    function registrarResgate(metaPremio) {
-        let resgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
-        resgates.push({
-            email: usuarioLogado.email,
-            nome: usuarioLogado.nome,
-            meta: metaPremio,
-            data: new Date().toLocaleDateString('pt-BR')
-        });
-        localStorage.setItem('resgates_status', JSON.stringify(resgates));
-        alert("Resgate enviado! O aviso sumirá do seu painel e o gestor foi notificado.");
-        mostrarCorretor();
-    }
-
+    // --- RENDERIZAR PAINEL CORRETOR (BARRA TÉRMICA & PRÊMIOS) ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
         
+        // Coleta de pontos reais e aprovação
         const resumoPts = obterPontosUsuario(usuarioLogado.email);
         const total = resumoPts.total;
         
         document.getElementById('pontos-total-user').innerText = total;
 
+        // Cálculos da Barra Térmica Inteligente
         const barra = document.getElementById('barra-progresso');
         let porcentagem = Math.min((total / 1000) * 100, 100);
         barra.style.width = porcentagem + "%";
         barra.innerText = Math.round(porcentagem) + "%";
 
+        // Lógica HSL (0 = Vermelho, 60 = Amarelo, 120 = Verde)
         let matizCor = Math.min((total / 1000) * 120, 120);
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
+        // Processamento Dinâmico de Avisos de Prêmios
         const boxPremio = document.getElementById('box-premio-alcançado');
         boxPremio.classList.add('hidden');
         boxPremio.innerHTML = "";
 
-        const meusResgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
-        const jaResgatou = (meta) => meusResgates.some(r => r.meta === meta && r.email === usuarioLogado.email);
-
-        let metaAlcancadaAtualmente = 0;
-        let textoPremioHtml = "";
-
-        if (total >= 1000 && !jaResgatou(1000)) {
-            metaAlcancadaAtualmente = 1000;
-            textoPremioHtml = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
-        } else if (total >= 750 && !jaResgatou(750)) {
-            metaAlcancadaAtualmente = 750;
-            textoPremioHtml = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 500 && !jaResgatou(500)) {
-            metaAlcancadaAtualmente = 500;
-            textoPremioHtml = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
-        } else if (total >= 250 && !jaResgatou(250)) {
-            metaAlcancadaAtualmente = 250;
-            textoPremioHtml = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
-        }
-
-        if (metaAlcancadaAtualmente > 0) {
+        if (total >= 1000) {
             boxPremio.className = "card-premio";
-            boxPremio.innerHTML = `
-                <div>${textoPremioHtml}</div>
-                <button class="btn-resgate" onclick="registrarResgate(${metaAlcancadaAtualmente})">✔ Resgatei o prêmio</button>
-            `;
-            boxPremio.classList.remove('hidden');
+            boxPremio.innerText = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
+        } else if (total >= 750) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 500) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 250) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
         }
 
+        // Histórico de logs
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
@@ -407,51 +363,14 @@
         });
     }
 
+    // --- RENDERIZAR PAINEL GESTOR (ANÁLISE DE PERFORMANCE COMPLETA) ---
     function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
-        
-        const containerPremiosGestor = document.getElementById('lista-premios-gestor');
-        containerPremiosGestor.innerHTML = "";
-
-        const todosResgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
-        let contadorPremiosExibidos = 0;
-
-        listaUsuarios.filter(u => u.cargo === 'corretor').forEach(c => {
-            const totalPts = obterPontosUsuario(c.email).total;
-            const metasPrêmios =; // CORREÇÃO: Array devidamente preenchido
-
-            metasPrêmios.forEach(meta => {
-                if (totalPts >= meta) {
-                    contadorPremiosExibidos++;
-                    const resgatado = todosResgates.some(r => r.meta === meta && r.email === c.email);
-                    
-                    if (!resgatado) {
-                        containerPremiosGestor.innerHTML += `
-                            <div class="notif-premio premio-aguardando">
-                                <span>🔔 Metas: <strong>${c.nome}</strong> acumulou ${totalPts} pts e conquistou o prêmio de ${meta} pontos!</span>
-                                <span class="badge-status" style="background: var(--danger)">Aguardando Retirada</span>
-                            </div>`;
-                    } else {
-                        const dadosResgate = todosResgates.find(r => r.meta === meta && r.email === c.email);
-                        containerPremiosGestor.innerHTML += `
-                            <div class="notif-premio premio-entregue">
-                                <span>✔ Entregue: <strong>${c.nome}</strong> retirou o prêmio da meta de ${meta} pontos.</span>
-                                <span class="badge-status" style="background: var(--secondary)">Entregue em ${dadosResgate.data}</span>
-                            </div>`;
-                    }
-                }
-            });
-        });
-
-        if(contadorPremiosExibidos === 0) {
-            containerPremiosGestor.innerHTML = "<p style='color: gray; font-size: 0.9em;'>Nenhum consultor atingiu patamares de prêmios até o momento.</p>";
-        }
-
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const pend = atvs.filter(a => a.status === 'pendente');
         const lista = document.getElementById('lista-pendentes');
         
-        lista.innerHTML = pend.length === 0 ? "<p>Nenhuma atividade aguardando avaliação comercial.</p>" : "";
+        lista.innerHTML = pend.length === 0 ? "<p>Sem pendências.</p>" : "";
         
         pend.forEach(a => {
             let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
@@ -502,30 +421,6 @@
                 <td class="col-destaque">${r.total} pts</td>
             </tr>`;
         });
-    }
-
-    function exportarRankingExcel() {
-        let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
-            const r = obterPontosUsuario(c.email);
-            return { nome: c.nome, ...r };
-        }).sort((a,b) => b.total - a.total);
-
-        if(rank.length === 0) {
-            return alert("Não existem corretores cadastrados para exportar.");
-        }
-
-        let conteudoCsv = "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos\n";
-        rank.forEach((r, i) => {
-            conteudoCsv += `${i+1}º;${r.nome};${r.vg} pts;${r.vc} pts;${r.cur} pts;${r.net} pts;${r.rs} pts;${r.total} pts\n`;
-        });
-
-        let blob = new Blob(["\ufeff" + conteudoCsv], { type: "text/csv;charset=utf-8;" });
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute("download", "Ranking_Grupo_Status.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     }
 
     function logout() { 
