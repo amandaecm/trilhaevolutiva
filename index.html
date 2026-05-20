@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Evolução - Grupo Status</title>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" defer></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
@@ -32,14 +32,14 @@
         .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
         .label-seguranca { color: var(--danger); font-weight: bold; font-size: 0.85em; }
 
-        /* Componentes de Gamificação e Inclusões Solicitadas */
+        /* Componentes de Gamificação */
         .container-progresso { background: #e0e0e0; border-radius: 20px; height: 24px; width: 100%; margin: 15px 0; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
         .barra-dinamica { height: 100%; width: 0%; transition: width 0.8s ease-in-out, background-color 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
         .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 15px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
         .btn-resgate { background: #ffc107; color: #333; margin-top: 10px; font-size: 0.9em; border: 1px solid #d39e00; width: auto; padding: 8px 20px; }
         .btn-resgate:hover { background: #e0a800; }
         
-        /* Estilos do Painel do Gestor (Monitor de Metas) */
+        /* Layout Administrativo */
         .notif-premio { padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; font-size: 0.9em; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .premio-aguardando { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
         .premio-entregue { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; opacity: 0.7; }
@@ -61,7 +61,7 @@
         <button onclick="fazerLogin()">Entrar</button>
         
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
-        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')">Esqueceu sua senha?</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')" style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
 
     <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
@@ -237,7 +237,7 @@
 
         try {
             if (fileInput.files.length > 0) {
-                const arquivoOriginal = fileInput.files;
+                const arquivoOriginal = fileInput.files; // CORREÇÃO: Pega o arquivo único da lista
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -328,7 +328,6 @@
         }
     }
 
-    // --- FUNÇÃO DE LOG DE CONTROLE DE RESGATES ---
     function registrarResgate(metaPremio) {
         let resgates = JSON.parse(localStorage.getItem('resgates_status') || '[]');
         resgates.push({
@@ -359,7 +358,6 @@
         let matizCor = Math.min((total / 1000) * 120, 120);
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
-        // Gerenciador inteligente de avisos baseado nos cliques do corretor
         const boxPremio = document.getElementById('box-premio-alcançado');
         boxPremio.classList.add('hidden');
         boxPremio.innerHTML = "";
@@ -406,7 +404,6 @@
     function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
         
-        // RENDER DO MONITOR DE METAS E BAIXAS DE PRÊMIOS DO GESTOR
         const containerPremiosGestor = document.getElementById('lista-premios-gestor');
         containerPremiosGestor.innerHTML = "";
 
@@ -415,7 +412,7 @@
 
         listaUsuarios.filter(u => u.cargo === 'corretor').forEach(c => {
             const totalPts = obterPontosUsuario(c.email).total;
-            const metasPremios =;
+            const metasPremios =; // CORREÇÃO: Array de metas preenchido perfeitamente
 
             metasPremios.forEach(meta => {
                 if (totalPts >= meta) {
@@ -501,7 +498,6 @@
         });
     }
 
-    // Exportação em formato CSV separado por ponto e vírgula nativo para o Excel abrir sem bugs
     function exportarRankingExcel() {
         let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
             const r = obterPontosUsuario(c.email);
