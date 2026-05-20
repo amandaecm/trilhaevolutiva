@@ -8,21 +8,19 @@
     <style>
         :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .card { background: white; max-width: 950px; margin: 20px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card { background: white; max-width: 1050px; margin: 20px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
         input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         
-        /* Estilos de Atividades */
         .item-atividade { padding: 15px; margin-bottom: 10px; border-radius: 4px; border-left: 5px solid #ccc; background: #fdfdfd; }
         .status-pendente { border-left-color: var(--warning); background: #fffdf0; }
         .status-aprovado { border-left-color: var(--secondary); background: #f4faf6; }
         .status-reprovado { border-left-color: var(--danger); background: #fdf4f4; }
         
-        /* Tabela de Ranking Expandida */
-        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em; }
-        .ranking-table th, .ranking-table td { padding: 12px 8px; text-align: center; border-bottom: 1px solid #ddd; }
+        .ranking-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85em; }
+        .ranking-table th, .ranking-table td { padding: 10px 6px; text-align: center; border-bottom: 1px solid #ddd; }
         .ranking-table th { background-color: #f8f9fa; color: #333; }
         .col-destaque { font-weight: bold; color: var(--primary); background-color: #f0f7ff; }
         
@@ -33,6 +31,17 @@
         .perfil-info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
         .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
         .label-seguranca { color: var(--danger); font-weight: bold; font-size: 0.85em; }
+
+        /* Componentes de Gamificação */
+        .container-progresso { background: #e0e0e0; border-radius: 20px; height: 24px; width: 100%; margin: 15px 0; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
+        .barra-dinamica { height: 100%; width: 0%; transition: width 0.8s ease-in-out, background-color 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.01); box-shadow: 0 4px 10px rgba(255, 193, 7, 0.2); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -44,7 +53,7 @@
         <button onclick="fazerLogin()">Entrar</button>
         
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
-        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')" style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
+        <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-esqueceu')", style="color: #7f8c8d; font-size: 0.8em; margin-top: 15px;">Esqueceu sua senha?</div>
     </div>
 
     <div id="tela-cadastro" class="card hidden" style="max-width: 450px;">
@@ -75,19 +84,32 @@
         <div class="link-alternar" onclick="alternarTelas('tela-esqueceu', 'tela-login')">Voltar para o Login</div>
     </div>
 
-    <div id="painel-corretor" class="card hidden" style="max-width: 700px;">
+    <div id="painel-corretor" class="card hidden" style="max-width: 750px;">
         <h2>Painel do Corretor</h2>
-        <div class="perfil-info">Olá, <strong id="nome-user"></strong>! Acompanhe seu progresso.</div>
         
+        <div class="perfil-info">
+            Olá, <strong id="nome-user"></strong>! Acompanhe seu progresso na Trilha.<br>
+            Pontuação Atual Aprovada: <strong id="pontos-total-user">0</strong> / 1000 pts
+            
+            <div class="container-progresso">
+                <div id="barra-progresso" class="barra-dinamica">0%</div>
+            </div>
+            
+            <div id="box-premio-alcançado" class="hidden"></div>
+        </div>
+        
+        <h3>Enviar Nova Atividade</h3>
         <select id="tipo-atividade" onchange="toggleUpload()">
-            <option value="Venda">Venda (Bougainville/Florença)</option>
-            <option value="Curso">Curso (Certificado)</option>
-            <option value="Evento">Networking (Foto)</option>
+            <option value="Venda_Gestor">Venda - Lead da Construtora [+100 pts]</option>
+            <option value="Venda_Corretor">Venda - Lead Tráfego Próprio [+150 pts]</option>
+            <option value="Curso">Curso / Palestra Concluída [+75 pts]</option>
+            <option value="Evento">Networking / Evento Corporativo [+50 pts]</option>
+            <option value="Redes_Sociais">Movimentação Redes Sociais (Feed/Reels) [+15 pts]</option>
         </select>
-        <input type="text" id="desc-atividade" placeholder="Descrição (Ex: Lote A-12 ou Nome do Curso)">
+        <input type="text" id="desc-atividade" placeholder="Descrição (Ex: Lote B-12 Bougainville ou Nome do Curso)">
         
-        <div id="campo-upload" class="hidden">
-            <label>Anexar Comprovante (Imagem ou PDF):</label>
+        <div id="campo-upload">
+            <label style="font-weight: bold; font-size: 0.9em;">Anexar Comprovante (Imagem ou PDF):</label>
             <input type="file" id="arquivo-input" accept="image/*,.pdf">
         </div>
 
@@ -103,16 +125,17 @@
         <h3>Pendências para Avaliação:</h3>
         <div id="lista-pendentes"></div>
         <hr>
-        <h3>🏆 Ranking de Corretores (Visão Detalhada da Gestora)</h3>
+        <h3>🏆 Ranking de Corretores (Análise de Performance da Gestora)</h3>
         <table class="ranking-table">
             <thead>
                 <tr>
                     <th>Posição</th>
                     <th style="text-align: left;">Corretor</th>
-                    <th>Nível</th>
-                    <th>Pontos Venda</th>
-                    <th>Pontos Curso</th>
-                    <th>Pontos Networking</th>
+                    <th>Venda (Gestor)</th>
+                    <th>Venda (Corretor)</th>
+                    <th>Cursos</th>
+                    <th>Networking</th>
+                    <th>Redes Sociais</th>
                     <th class="col-destaque">Total Pontos</th>
                 </tr>
             </thead>
@@ -125,19 +148,17 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
-    // Chaves opcionais do EmailJS (Configurável)
-    const EMAILJS_SERVICE_ID = "service_5rt8wnw";
-    const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
-    const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
+    const EMAILJS_SERVICE_ID = "COLE_AQUI_SEU_SERVICE_ID";
+    const EMAILJS_TEMPLATE_ID = "COLE_AQUI_SEU_TEMPLATE_ID";
+    const EMAILJS_PUBLIC_KEY = "COLE_AQUI_SUA_PUBLIC_KEY";
 
-    if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "WCFWMOoQC6Odaod_8") {
+    if(EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "COLE_AQUI_SUA_PUBLIC_KEY") {
         emailjs.init(EMAILJS_PUBLIC_KEY);
     }
 
     let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
     let usuarioLogado = null;
 
-    // Controla a persistência da sessão sem quebras visuais
     window.onload = function() {
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
@@ -145,12 +166,7 @@
             document.getElementById('tela-login').classList.add('hidden');
             usuarioLogado.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
         } else {
-            // Garante que se não houver sessão, apenas a tela de login fique visível
             document.getElementById('tela-login').classList.remove('hidden');
-            document.getElementById('tela-cadastro').classList.add('hidden');
-            document.getElementById('tela-esqueceu').classList.add('hidden');
-            document.getElementById('painel-corretor').classList.add('hidden');
-            document.getElementById('painel-gestor').classList.add('hidden');
         }
     };
 
@@ -161,7 +177,8 @@
 
     function toggleUpload() {
         const t = document.getElementById('tipo-atividade').value;
-        document.getElementById('campo-upload').className = (t === 'Venda') ? 'hidden' : '';
+        // Agora todas exigem anexo exceto se quiser mudar alguma regra específica
+        document.getElementById('campo-upload').className = '';
     }
 
     function lerArquivoDireto(file) {
@@ -171,6 +188,23 @@
             reader.onload = (event) => resolve(event.target.result);
             reader.onerror = e => reject(e);
         });
+    }
+
+    // --- CÁLCULO INDIVIDUAL DETALHADO ---
+    function obterPontosUsuario(email) {
+        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+        const aprovadas = atvs.filter(a => a.email === email && a.status === 'aprovado');
+        
+        let resumo = { vg: 0, vc: 0, cur: 0, net: 0, rs: 0, total: 0 };
+        aprovadas.forEach(a => {
+            if (a.tipo === 'Venda_Gestor') resumo.vg += 100;
+            else if (a.tipo === 'Venda_Corretor') resumo.vc += 150;
+            else if (a.tipo === 'Curso') resumo.cur += 75;
+            else if (a.tipo === 'Evento') resumo.net += 50;
+            else if (a.tipo === 'Redes_Sociais') resumo.rs += 15;
+        });
+        resumo.total = resumo.vg + resumo.vc + resumo.cur + resumo.net + resumo.rs;
+        return resumo;
     }
 
     async function cadastrarAtividade() {
@@ -187,9 +221,8 @@
         btn.innerText = "Registrando...";
 
         try {
-            if (tipo !== 'Venda' && fileInput.files.length > 0) {
+            if (fileInput.files.length > 0) {
                 const arquivoOriginal = fileInput.files;
-                // Limite seguro de 1.5MB
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -208,9 +241,9 @@
             localStorage.setItem('atividades_status', JSON.stringify(atvs));
             
             if (exibiuAvisoTamanho) {
-                alert("Solicitação enviada em texto! Arquivos maiores que 1.5MB devem ser validados fisicamente com a gestora.");
+                alert("Enviado em formato de texto! Como o arquivo superou 1.5MB, valide a imagem diretamente com a gerência.");
             } else {
-                alert("Atividade enviada com sucesso!");
+                alert("Atividade enviada com sucesso para análise!");
             }
             
             document.getElementById('desc-atividade').value = "";
@@ -218,8 +251,7 @@
             mostrarCorretor();
 
         } catch (e) {
-            alert("Erro ao processar arquivo local.");
-            console.error(e);
+            alert("Erro ao ler o arquivo.");
         } finally {
             btn.disabled = false;
             btn.innerText = "Enviar Atividade";
@@ -233,12 +265,12 @@
         const chaveDigitada = document.getElementById('cad-chave-empresa').value;
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
-        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave de Acesso da Construtora incorreta!");
+        if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave da Construtora incorreta!");
         if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já está registrado.");
         
         listaUsuarios.push({ nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value });
         localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
-        alert("Conta criada com sucesso!"); 
+        alert("Conta criada!"); 
         alternarTelas('tela-cadastro', 'tela-login');
     }
 
@@ -251,95 +283,101 @@
             sessionStorage.setItem('usuario_logado_status', JSON.stringify(u));
             document.getElementById('tela-login').classList.add('hidden');
             u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
-        } else alert("E-mail ou senha incorretos");
+        } else alert("Dados incorretos");
     }
 
     function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const btn = document.getElementById('btn-recuperar');
-        
-        if(!emailInformado) return alert("Por favor, digite seu e-mail.");
+        if(!emailInformado) return alert("Digite seu e-mail.");
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
-        const mensagemSucessoPadrao = "Se o e-mail informado estiver cadastrado em nossa base corporativa, as instruções privadas de recuperação foram transmitidas.";
 
         btn.disabled = true;
-        btn.innerText = "Processando...";
-
         if(EMAILJS_SERVICE_ID.includes("COLE_AQUI")) {
             setTimeout(() => {
-                alert("O serviço automatizado de envio externo não está ativado. Por favor, solicite a redefinição manual diretamente à Gestora Comercial.");
+                alert("Serviço externo inativo. Solicite suporte redefinindo direto na gestão.");
                 alternarTelas('tela-esqueceu', 'tela-login');
-                document.getElementById('esqueceu-email').value = "";
                 btn.disabled = false;
-                btn.innerText = "Enviar Credenciais";
             }, 1000);
             return;
         }
 
         if(usuarioEncontrado) {
-            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                to_email: usuarioEncontrado.email,
-                senha_usuario: usuarioEncontrado.senha
-            })
-            .then(() => {
-                alert(mensagemSucessoPadrao);
-                alternarTelas('tela-esqueceu', 'tela-login');
-                document.getElementById('esqueceu-email').value = "";
-            })
-            .catch((err) => {
-                console.error(err);
-                alert("Ocorreu uma instabilidade no envio corporativo. Solicite seu acesso diretamente à Gestora Comercial do Grupo Status.");
-                alternarTelas('tela-esqueceu', 'tela-login');
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.innerText = "Enviar Credenciais";
-            });
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: usuarioEncontrado.email, senha_usuario: usuarioEncontrado.senha })
+            .then(() => { alert("Instruções transmitidas se o e-mail constar em nossa base."); alternarTelas('tela-esqueceu', 'tela-login'); })
+            .catch(() => alert("Falha na transmissão."))
+            .finally(() => btn.disabled = false);
         } else {
-            setTimeout(() => {
-                alert(mensagemSucessoPadrao);
-                alternarTelas('tela-esqueceu', 'tela-login');
-                document.getElementById('esqueceu-email').value = "";
-                btn.disabled = false;
-                btn.innerText = "Enviar Credenciais";
-            }, 1200);
+            setTimeout(() => { alert("Processado."); alternarTelas('tela-esqueceu', 'tela-login'); btn.disabled = false; }, 1200);
         }
     }
 
+    // --- RENDERIZAR PAINEL CORRETOR (BARRA TÉRMICA & PRÊMIOS) ---
     function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
+        
+        // Coleta de pontos reais e aprovação
+        const resumoPts = obterPontosUsuario(usuarioLogado.email);
+        const total = resumoPts.total;
+        
+        document.getElementById('pontos-total-user').innerText = total;
+
+        // Cálculos da Barra Térmica Inteligente
+        const barra = document.getElementById('barra-progresso');
+        let porcentagem = Math.min((total / 1000) * 100, 100);
+        barra.style.width = porcentagem + "%";
+        barra.innerText = Math.round(porcentagem) + "%";
+
+        // Lógica HSL (0 = Vermelho, 60 = Amarelo, 120 = Verde)
+        let matizCor = Math.min((total / 1000) * 120, 120);
+        barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
+
+        // Processamento Dinâmico de Avisos de Prêmios
+        const boxPremio = document.getElementById('box-premio-alcançado');
+        boxPremio.classList.add('hidden');
+        boxPremio.innerHTML = "";
+
+        if (total >= 1000) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🏆 Você alcançou o QUARTO e ÚLTIMO prêmio surpresa, Parabéns pela conquista!! Consulte sua gestão.";
+        } else if (total >= 750) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 500) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa, consulte sua gestão.";
+        } else if (total >= 250) {
+            boxPremio.className = "card-premio";
+            boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa, consulte sua gestão.";
+        }
+
+        // Histórico de logs
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
-        
         hist.innerHTML = ""; 
         minhas.reverse().forEach(a => {
-            hist.innerHTML += `<div class="item-atividade status-${a.status}"><strong>${a.tipo}</strong>: ${a.desc} (${a.status.toUpperCase()})</div>`;
+            let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
+            hist.innerHTML += `<div class="item-atividade status-${a.status}"><strong>${labelTipo}</strong>: ${a.desc} (${a.status.toUpperCase()})</div>`;
         });
     }
 
+    // --- RENDERIZAR PAINEL GESTOR (ANÁLISE DE PERFORMANCE COMPLETA) ---
     function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const pend = atvs.filter(a => a.status === 'pendente');
         const lista = document.getElementById('lista-pendentes');
         
-        lista.innerHTML = pend.length === 0 ? "<p>Nenhuma pendência aguardando avaliação.</p>" : "";
+        lista.innerHTML = pend.length === 0 ? "<p>Sem pendências.</p>" : "";
         
         pend.forEach(a => {
-            let botaoVer = "";
-            if (a.arquivo) {
-                if (a.arquivo.startsWith("data:application/pdf")) {
-                    botaoVer = `<button class="btn-controle btn-ver" onclick="abrirPdfJanela('${a.id}')">Ver PDF</button>`;
-                } else {
-                    botaoVer = `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`;
-                }
-            } else {
-                botaoVer = `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem anexo visual]</span>`;
-            }
+            let labelTipo = a.tipo === 'Venda_Gestor' ? 'Venda (Gestor)' : (a.tipo === 'Venda_Corretor' ? 'Venda (Corretor)' : (a.tipo === 'Curso' ? 'Curso' : (a.tipo === 'Evento' ? 'Networking' : 'Redes Sociais')));
+            let botaoVer = a.arquivo ? (a.arquivo.startsWith("data:application/pdf") ? `<button class="btn-controle btn-ver" onclick="abrirPdfJanela('${a.id}')">Ver PDF</button>` : `<button class="btn-controle btn-ver" onclick="window.open('${a.arquivo}', '_blank')">Ver Imagem</button>`) : `<span style="color:gray; font-size:0.85em; margin-right:10px;">[Sem mídia]</span>`;
+            
             lista.innerHTML += `<div class="item-atividade status-pendente">
-                <strong>${a.nome}</strong> enviou: ${a.tipo} (${a.desc})<br>
+                <strong>${a.nome}</strong> enviou: ${labelTipo} (${a.desc})<br>
                 ${botaoVer}
                 <button class="btn-controle btn-aprovar" onclick="decidir('${a.id}', 'aprovado')">Aprovar</button>
                 <button class="btn-controle btn-reprovar" onclick="decidir('${a.id}', 'reprovado')">Reprovar</button>
@@ -366,22 +404,20 @@
         const tbody = document.getElementById('tabela-ranking');
         tbody.innerHTML = ""; 
         
-        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
-            let v=0, cur=0, n=0;
-            atvs.filter(a => a.email === c.email && a.status === 'aprovado').forEach(a => {
-                if(a.tipo === 'Venda') v+=100; else if(a.tipo === 'Curso') cur+=50; else n+=20;
-            });
-            return { nome: c.nome, v, cur, n, total: v+cur+n };
+            const r = obterPontosUsuario(c.email);
+            return { nome: c.nome, ...r };
         }).sort((a,b) => b.total - a.total);
+
         rank.forEach((r, i) => {
             tbody.innerHTML += `<tr>
                 <td><strong>${i+1}º</strong></td>
                 <td style="text-align:left">${r.nome}</td>
-                <td>Trainee</td>
-                <td>${r.v} pts</td>
+                <td>${r.vg} pts</td>
+                <td>${r.vc} pts</td>
                 <td>${r.cur} pts</td>
-                <td>${r.n} pts</td>
+                <td>${r.net} pts</td>
+                <td>${r.rs} pts</td>
                 <td class="col-destaque">${r.total} pts</td>
             </tr>`;
         });
