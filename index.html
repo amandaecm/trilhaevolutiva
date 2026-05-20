@@ -246,18 +246,15 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
     
-    // ==========================================
-    // ⚠️ COLOQUE SUAS CREDENCIAIS DO SUPABASE AQUI:
-    const SUPABASE_URL = "atcxdopulbgfbtrkwwce";
+    const SUPABASE_URL = "https://atcxdopulbgfbtrkwwce.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Y3hkb3B1bGJnZmJ0cmt3d2NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTI5MTIsImV4cCI6MjA5NDgyODkxMn0.rKmdB4eo-adGTr-H_8S8kaDHF1qbef51him0oswoaus";
-    // ==========================================
 
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let listaUsuarios = []; // Será alimentada em tempo real pela nuvem
+    let listaUsuarios = []; 
     let usuarioLogado = null;
 
     const FRASES_MOTIVACIONAIS = [
-        { texto: "O success é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
+        { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
         { texto: "Grandes conquistas começam com o compromisso de dar o seu melhor hoje.", autor: "Mentalidade Status" },
         { texto: "Não espere por oportunidades, crie-as com o seu trabalho e dedicação.", autor: "Grupo Status" },
         { texto: "A vontade de ganhar é importante, mas a vontade de se preparar é vital.", autor: "Joe Paterno" },
@@ -280,7 +277,7 @@
 
     window.onload = async function() {
         gerarFraseDoDia(); 
-        await atualizarListaUsuariosLocal(); // Baixa os usuários da nuvem imediatamente
+        await atualizarListaUsuariosLocal(); 
 
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
@@ -321,7 +318,6 @@
         }
     }
 
-    // Função de cálculo de pontos agora busca os dados salvos de forma síncrona
     function obterPontosUsuario(email, todasAtividades) {
         const aprovadas = todasAtividades.filter(a => a.email === email && a.status === 'aprovado');
         let resumo = { vg: 0, vc: 0, cur: 0, net: 0, rs: 0, total: 0 };
@@ -336,7 +332,6 @@
         return resumo;
     }
 
-    // --- CADASTRO DE ATIVIDADE CONECTADO COM O BANCO ---
     async function cadastrarAtividade() {
         const btn = document.getElementById('btn-enviar');
         const tipo = document.getElementById('tipo-atividade').value;
@@ -347,7 +342,6 @@
         btn.disabled = true;
         btn.innerText = "Gravando na Nuvem...";
 
-        // Envia direto para a tabela "atividades" do Supabase
         const { error } = await _supabase.from('atividades').insert([
             { id: Date.now(), email: usuarioLogado.email, nome: usuarioLogado.nome, tipo: tipo, desc_atividade: desc, status: 'pendente' }
         ]);
@@ -363,7 +357,6 @@
         btn.innerText = "Enviar Atividade";
     }
 
-    // --- REGISTRO DE USUÁRIO NA NUVEM ---
     async function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
@@ -445,19 +438,17 @@
         }
     }
 
-    // --- RENDERIZAÇÃO DO PAINEL DO CORRETOR VIA NUVEM ---
     async function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
         
-        // Puxa as atividades do banco em tempo real
         let { data: atvs } = await _supabase.from('atividades').select('*');
         atvs = atvs || [];
 
         const resumoPts = obterPontosUsuario(usuarioLogado.email, atvs);
         const totalGeral = resumoPts.total;
         
-        document.getElementById('pontos-total-user').innerText = totalGeral;
+        document.getElementById('points-total-user' ? 'pontos-total-user' : 'pontos-total-user').innerText = totalGeral;
 
         let pontosNoCicloAtual = totalGeral % 1000;
         if (pontosNoCicloAtual === 0 && totalGeral > 0) { pontosNoCicloAtual = 1000; }
@@ -518,12 +509,10 @@
         });
     }
 
-    // --- RENDERIZAÇÃO DO PAINEL DO GESTOR VIA NUVEM ---
     async function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
         
-        // Puxa as mídias e usuários atualizados
-        let { data: atvs } = await _supabase.from('activities' === 'atividades' ? 'atividades' : 'atividades').select('*');
+        let { data: atvs } = await _supabase.from('atividades').select('*');
         atvs = atvs || [];
         await atualizarListaUsuariosLocal();
 
@@ -674,10 +663,8 @@
             return alert("Erro: Esse novo e-mail já está cadastrado!");
         }
         
-        // 1. Atualiza dados na nuvem (Tabela usuários)
         const { error: err1 } = await _supabase.from('usuarios').update({ email: novoEmail, senha: novaSenha }).eq('email', emailAntigoChave);
         
-        // 2. Se mudou o e-mail, atualiza o histórico atrelado na nuvem (Tabela atividades)
         if(!err1 && emailAntigoChave !== novoEmail) {
             await _supabase.from('atividades').update({ email: novoEmail }).eq('email', emailAntigoChave);
         }
@@ -696,7 +683,6 @@
         const confirmacao = confirm(`⚠️ DELETAR permanentemente o consultor "${usuario.nome}" na nuvem?`);
         
         if (confirmacao) {
-            // Remove usuário e seu histórico do banco mundial
             await _supabase.from('usuarios').delete().eq('email', emailSelecionado);
             await _supabase.from('atividades').delete().eq('email', emailSelecionado);
 
