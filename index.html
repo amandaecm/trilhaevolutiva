@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Evolução - Grupo Status</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #2c3e50; --secondary: #27ae60; --accent: #2980b9; --danger: #e74c3c; --warning: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
@@ -13,8 +14,7 @@
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         
-        /* Estilos específicos da Logo e Bloco Motivacional no Login */
-        .logo-container { text-align: center; margin-bottom: 15px; }
+        .logo-container { text-align: center; margin-bottom: 10px; }
         .logo-empresa { max-width: 180px; height: auto; object-fit: contain; }
         .box-motivacional { background: #fdfefe; border: 1px solid #e5e8e8; border-radius: 6px; padding: 12px; margin: 15px 0 5px 0; text-align: center; }
         .texto-motivacional { font-size: 0.88em; font-style: italic; color: #566573; margin: 0; line-height: 1.4; }
@@ -41,7 +41,6 @@
         .link-alternar { text-align: center; margin-top: 10px; font-size: 0.85em; color: var(--accent); cursor: pointer; text-decoration: underline; }
         .label-seguranca { color: var(--danger); font-weight: bold; font-size: 0.85em; }
 
-        /* Componentes de Gamificação */
         .container-progresso { background: #e0e0e0; border-radius: 20px; height: 24px; width: 100%; margin: 15px 0; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.2); }
         .barra-dinamica { height: 100%; width: 0%; transition: width 0.8s ease-in-out, background-color 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.85em; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
         .card-premio { background: #fff3cd; border-left: 5px solid #ffc107; padding: 12px; margin: 15px 0; border-radius: 4px; font-weight: bold; color: #856404; animation: pulse 2s infinite; }
@@ -73,7 +72,7 @@
         <div class="logo-container">
             <img class="logo-empresa" src="https://static.wixstatic.com/media/cf72c4_63a805515a37450a86eefbe2a2f392db~mv2.png/v1/fill/w_308,h_158,al_c,q_85,enc_avif,quality_auto/Group%20427%20(1)%20(1).png" alt="Logo Grupo Status" onerror="this.style.display='none'">
         </div>
-        <h2 style="text-align: center; color: var(--primary); margin-top: 0;">Portal Evolução - Login</h2>
+        <h2 style="text-align: center; color: var(--primary); margin-top: 10px; font-size: 1.6em;">Portal Evolução - Grupo Status</h2>
         
         <input type="email" id="login-email" placeholder="E-mail">
         <input type="password" id="login-senha" placeholder="Senha">
@@ -81,7 +80,7 @@
         
         <div class="box-motivacional">
             <p id="texto-frase" class="texto-motivacional">Carregando dose de motivação para hoje...</p>
-            <span id="autor-frase" class="autor-frase"></span>
+            <span id="autor-frase" class="autor-motivacional"></span>
         </div>
 
         <div class="link-alternar" onclick="alternarTelas('tela-login', 'tela-cadastro')">Não tem conta? Cadastre-se aqui</div>
@@ -246,12 +245,19 @@
 
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
-    let listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
+    
+    // ==========================================
+    // ⚠️ COLOQUE SUAS CREDENCIAIS DO SUPABASE AQUI:
+    const SUPABASE_URL = "atcxdopulbgfbtrkwwce";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0Y3hkb3B1bGJnZmJ0cmt3d2NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTI5MTIsImV4cCI6MjA5NDgyODkxMn0.rKmdB4eo-adGTr-H_8S8kaDHF1qbef51him0oswoaus";
+    // ==========================================
+
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let listaUsuarios = []; // Será alimentada em tempo real pela nuvem
     let usuarioLogado = null;
 
-    // --- LISTA DE FRASES MOTIVACIONAIS DIÁRIAS (UMA PARA CADA DIA) ---
     const FRASES_MOTIVACIONAIS = [
-        { texto: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
+        { texto: "O success é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
         { texto: "Grandes conquistas começam com o compromisso de dar o seu melhor hoje.", autor: "Mentalidade Status" },
         { texto: "Não espere por oportunidades, crie-as com o seu trabalho e dedicação.", autor: "Grupo Status" },
         { texto: "A vontade de ganhar é importante, mas a vontade de se preparar é vital.", autor: "Joe Paterno" },
@@ -263,21 +269,18 @@
         { texto: "Os problemas são oportunidades para demonstrarmos o nosso talento.", autor: "Duke Ellington" }
     ];
 
-    // Função que calcula matematicamente qual frase exibir baseado no dia absoluto
     function gerarFraseDoDia() {
         const hoje = new Date();
-        // Converte o dia atual em um número único puro (carimbo de data)
         const timestampDia = Math.floor(hoje.getTime() / (1000 * 60 * 60 * 24));
-        // Usa o resto da divisão para rodar a lista infinitamente sem estourar as frases
         const indiceFrase = timestampDia % FRASES_MOTIVACIONAIS.length;
-        
         const fraseSelecionada = FRASES_MOTIVACIONAIS[indiceFrase];
         document.getElementById('texto-frase').innerText = `"${fraseSelecionada.texto}"`;
         document.getElementById('autor-frase').innerText = `- ${fraseSelecionada.autor}`;
     }
 
-    window.onload = function() {
-        gerarFraseDoDia(); // Dispara a troca da frase motivacional do dia no login
+    window.onload = async function() {
+        gerarFraseDoDia(); 
+        await atualizarListaUsuariosLocal(); // Baixa os usuários da nuvem imediatamente
 
         const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
         if (usuarioSalvo) {
@@ -288,6 +291,11 @@
             document.getElementById('tela-login').classList.remove('hidden');
         }
     };
+
+    async function atualizarListaUsuariosLocal() {
+        let { data } = await _supabase.from('usuarios').select('*');
+        listaUsuarios = data || [];
+    }
 
     function alternarTelas(esc, mos) {
         document.getElementById(esc).classList.add('hidden');
@@ -313,10 +321,9 @@
         }
     }
 
-    function obterPontosUsuario(email) {
-        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-        const aprovadas = atvs.filter(a => a.email === email && a.status === 'aprovado');
-        
+    // Função de cálculo de pontos agora busca os dados salvos de forma síncrona
+    function obterPontosUsuario(email, todasAtividades) {
+        const aprovadas = todasAtividades.filter(a => a.email === email && a.status === 'aprovado');
         let resumo = { vg: 0, vc: 0, cur: 0, net: 0, rs: 0, total: 0 };
         aprovadas.forEach(a => {
             if (a.tipo === 'Venda_Gestor') resumo.vg += 100;
@@ -329,7 +336,8 @@
         return resumo;
     }
 
-    function cadastrarAtividade() {
+    // --- CADASTRO DE ATIVIDADE CONECTADO COM O BANCO ---
+    async function cadastrarAtividade() {
         const btn = document.getElementById('btn-enviar');
         const tipo = document.getElementById('tipo-atividade').value;
         const desc = document.getElementById('desc-atividade').value.trim();
@@ -337,32 +345,26 @@
         if (!desc) return alert("Descreva a atividade");
         
         btn.disabled = true;
-        btn.innerText = "Registrando...";
+        btn.innerText = "Gravando na Nuvem...";
 
-        try {
-            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-            atvs.push({
-                id: Date.now(),
-                email: usuarioLogado.email,
-                nome: usuarioLogado.nome,
-                tipo, desc, status: 'pendente'
-            });
+        // Envia direto para a tabela "atividades" do Supabase
+        const { error } = await _supabase.from('atividades').insert([
+            { id: Date.now(), email: usuarioLogado.email, nome: usuarioLogado.nome, tipo: tipo, desc_atividade: desc, status: 'pendente' }
+        ]);
 
-            localStorage.setItem('atividades_status', JSON.stringify(atvs));
+        if (error) {
+            alert("Erro ao salvar atividade no banco de dados.");
+        } else {
             alert("Atividade enviada com sucesso para análise do gestor!");
-            
             document.getElementById('desc-atividade').value = "";
-            mostrarCorretor();
-
-        } catch (e) {
-            alert("Erro ao salvar a atividade.");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "Enviar Atividade";
+            await mostrarCorretor();
         }
+        btn.disabled = false;
+        btn.innerText = "Enviar Atividade";
     }
 
-    function realizarCadastro() {
+    // --- REGISTRO DE USUÁRIO NA NUVEM ---
+    async function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
         const s = document.getElementById('cad-senha').value;
@@ -370,24 +372,36 @@
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
         if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave da Construtora incorreta!");
+        
+        await atualizarListaUsuariosLocal();
         if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já está registrado.");
         
-        listaUsuarios.push({ nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value });
-        localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
-        alert("Conta criada!"); 
-        alternarTelas('tela-cadastro', 'tela-login');
+        const { error } = await _supabase.from('usuarios').insert([
+            { nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value }
+        ]);
+
+        if (error) {
+            alert("Erro ao realizar cadastro na nuvem.");
+        } else {
+            alert("Conta criada com sucesso no servidor corporativo!"); 
+            await atualizarListaUsuariosLocal();
+            alternarTelas('tela-cadastro', 'tela-login');
+        }
     }
 
-    function fazerLogin() {
+    async function fazerLogin() {
         const e = document.getElementById('login-email').value.trim();
         const s = document.getElementById('login-senha').value;
+        
+        await atualizarListaUsuariosLocal();
         const u = listaUsuarios.find(user => user.email === e && user.senha === s);
+        
         if (u) {
             usuarioLogado = u;
             sessionStorage.setItem('usuario_logado_status', JSON.stringify(u));
             document.getElementById('tela-login').classList.add('hidden');
             u.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
-        } else alert("Dados incorretos");
+        } else alert("Dados incorretos ou usuário não cadastrado.");
     }
 
     function executarEsqueceuSenha() {
@@ -410,7 +424,7 @@
             }
         } else {
             caixaResposta.style.borderLeftColor = "var(--danger)";
-            textoResposta.innerText = "E-mail não localizado na base de dados. Caso seja um consultor, consulte o setor administrativo para alterar senha.";
+            textoResposta.innerText = "E-mail não localizado na base de dados.";
         }
     }
 
@@ -420,28 +434,27 @@
         alternarTelas('tela-esqueceu', 'tela-login');
     }
 
-    function apagarAtividade(id) {
+    async function apagarAtividade(id) {
         const confirmacao = confirm("⚠️ Você realmente quer apagar esta atividade?");
-        
         if (confirmacao) {
-            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-            atvs = atvs.filter(a => a.id != id);
-            localStorage.setItem('atividades_status', JSON.stringify(atvs));
-            
-            alert("Pontuação extraída com sucesso!");
-            if (usuarioLogado.cargo === 'gestor') {
-                mostrarGestor();
-            } else {
-                mostrarCorretor();
+            const { error } = await _supabase.from('atividades').delete().eq('id', id);
+            if(!error) {
+                alert("Pontuação extraída com sucesso!");
+                usuarioLogado.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
             }
         }
     }
 
-    function mostrarCorretor() {
+    // --- RENDERIZAÇÃO DO PAINEL DO CORRETOR VIA NUVEM ---
+    async function mostrarCorretor() {
         document.getElementById('painel-corretor').classList.remove('hidden');
         document.getElementById('nome-user').innerText = usuarioLogado.nome;
         
-        const resumoPts = obterPontosUsuario(usuarioLogado.email);
+        // Puxa as atividades do banco em tempo real
+        let { data: atvs } = await _supabase.from('atividades').select('*');
+        atvs = atvs || [];
+
+        const resumoPts = obterPontosUsuario(usuarioLogado.email, atvs);
         const totalGeral = resumoPts.total;
         
         document.getElementById('pontos-total-user').innerText = totalGeral;
@@ -490,7 +503,6 @@
             boxPremio.classList.remove('hidden');
         }
 
-        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
         const minhas = atvs.filter(a => a.email === usuarioLogado.email);
         const hist = document.getElementById('historico-corretor');
         hist.innerHTML = ""; 
@@ -500,15 +512,21 @@
             hist.innerHTML += `
                 <div class="item-atividade status-${a.status}">
                     <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
-                    <strong>${labelTipo}</strong>: ${a.desc} (${a.status.toUpperCase()})
+                    <strong>${labelTipo}</strong>: ${a.desc_atividade} (${a.status.toUpperCase()})
                     <div class="clear-float"></div>
                 </div>`;
         });
     }
 
-    function mostrarGestor() {
+    // --- RENDERIZAÇÃO DO PAINEL DO GESTOR VIA NUVEM ---
+    async function mostrarGestor() {
         document.getElementById('painel-gestor').classList.remove('hidden');
-        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
+        
+        // Puxa as mídias e usuários atualizados
+        let { data: atvs } = await _supabase.from('activities' === 'atividades' ? 'atividades' : 'atividades').select('*');
+        atvs = atvs || [];
+        await atualizarListaUsuariosLocal();
+
         const pend = atvs.filter(a => a.status === 'pendente');
         const lista = document.getElementById('lista-pendentes');
         
@@ -519,31 +537,29 @@
             
             lista.innerHTML += `<div class="item-atividade status-pendente">
                 <button class="btn-excluir" onclick="apagarAtividade('${a.id}')">🗑️ Apagar</button>
-                <strong>${a.nome}</strong> enviou: ${labelTipo} (${a.desc})<br><br>
+                <strong>${a.nome}</strong> enviou: ${labelTipo} (${a.desc_atividade})<br><br>
                 <button class="btn-controle btn-aprovar" onclick="decidir('${a.id}', 'aprovado')">Aprovar</button>
                 <button class="btn-controle btn-reprovar" onclick="decidir('${a.id}', 'reprovado')">Reprovar</button>
                 <div class="clear-float"></div>
             </div>`;
         });
         
-        renderRanking();
-        verificarPremiosParaGestor();
+        renderRanking(atvs);
+        verificarPremiosParaGestor(atvs);
         atualizarSelectConsultoresGestor(); 
     }
 
-    function decidir(id, status) {
-        let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-        atvs = atvs.map(a => a.id == id ? {...a, status} : a);
-        localStorage.setItem('atividades_status', JSON.stringify(atvs));
-        mostrarGestor(); 
+    async function decidir(id, status) {
+        const { error } = await _supabase.from('atividades').update({ status: status }).eq('id', id);
+        if(!error) mostrarGestor();
     }
 
-    function renderRanking() {
+    function renderRanking(atvs) {
         const tbody = document.getElementById('tabela-ranking');
         tbody.innerHTML = ""; 
         
         let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
-            const r = obterPontosUsuario(c.email);
+            const r = obterPontosUsuario(c.email, atvs);
             return { nome: c.nome, ...r };
         }).sort((a,b) => b.total - a.total);
 
@@ -561,24 +577,20 @@
         });
     }
 
-    function verificarPremiosParaGestor() {
+    function verificarPremiosParaGestor(atvs) {
         const containerAlertas = document.getElementById('alertas-premios-gestor');
         containerAlertas.innerHTML = "";
-
-        let corretores = listaUsuarios.filter(u => u.cargo === 'corretor');
         let alertasGerados = 0;
 
+        let corretores = listaUsuarios.filter(u => u.cargo === 'corretor');
         corretores.forEach(c => {
-            const pontosTotais = obterPontosUsuario(c.email).total;
-            
+            const pontosTotais = obterPontosUsuario(c.email, atvs).total;
             let pontosNoCiclo = pontosTotais % 1000;
             if(pontosNoCiclo === 0 && pontosTotais > 0) { pontosNoCiclo = 1000; }
-
             let numDoCicloAtual = Math.floor(pontosTotais / 1000);
             if(pontosTotais % 1000 === 0 && pontosTotais > 0) { numDoCicloAtual = numDoCicloAtual - 1; }
 
             let mensagemPremio = "";
-
             if (pontosNoCiclo >= 1000) {
                 mensagemPremio = `🏆 <strong>${c.nome}</strong> atingiu a meta de ${pontosTotais} pts e completou o <strong>4º Prêmio (Final do ciclo)!</strong>`;
             } else if (pontosNoCiclo >= 750) {
@@ -598,7 +610,7 @@
                 alertasGerados++;
                 containerAlertas.innerHTML += `
                     <div class="card-premio-gestor" style="background: #e2f0fe; border-left-color: var(--accent); color: #1a5276;">
-                        🔄 <strong>Aviso de Reinício:</strong> O consultor <strong>${c.nome}</strong> completou o ciclo de ${numDoCicloAtual * 1000} pontos e <strong>está começando a contagem de prêmios novamente!</strong> (Ciclo atual: ${numDoCicloAtual + 1}º)
+                        🔄 <strong>Aviso de Reinício:</strong> O consultor <strong>${c.nome}</strong> completou o ciclo de ${numDoCicloAtual * 1000} pontos e iniciou uma nova contagem!
                     </div>`;
             }
         });
@@ -608,40 +620,32 @@
         }
     }
 
-    function exportarRankingCSV() {
+    async function exportarRankingCSV() {
+        let { data: atvs } = await _supabase.from('atividades').select('*');
+        atvs = atvs || [];
+
         let corretoresRankeados = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
-            const r = obterPontosUsuario(c.email);
+            const r = obterPontosUsuario(c.email, atvs);
             return { nome: c.nome, ...r };
         }).sort((a,b) => b.total - a.total);
 
-        if (corretoresRankeados.length === 0) {
-            return alert("Não há dados de corretores para exportar.");
-        }
+        if (corretoresRankeados.length === 0) return alert("Não há dados para exportar.");
 
-        let csvConteudo = "\uFEFF"; 
-        csvConteudo += "Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos Geral\n";
-
+        let csvConteudo = "\uFEFF;Posicao;Corretor;Venda (Gestor);Venda (Corretor);Cursos;Networking;Redes Sociais;Total Pontos Geral\n";
         corretoresRankeados.forEach((r, index) => {
             csvConteudo += `${index + 1}º;${r.nome};${r.vg} pts;${r.vc} pts;${r.cur} pts;${r.net} pts;${r.rs} pts;${r.total} pts\n`;
         });
 
         const blob = new Blob([csvConteudo], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        
-        link.setAttribute("href", url);
+        link.setAttribute("href", URL.createObjectURL(blob));
         link.setAttribute("download", `Ranking_Evolucao_Status_${Date.now()}.csv`);
-        link.style.visibility = 'hidden';
-        
-        document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
     }
     
     function atualizarSelectConsultoresGestor() {
         const select = document.getElementById('select-redefinir-usuario');
         select.innerHTML = '<option value="">-- Selecione um Consultor --</option>';
-        
         let corretores = listaUsuarios.filter(u => u.cargo === 'corretor');
         corretores.forEach(c => {
             select.innerHTML += `<option value="${c.email}">${c.nome} (${c.email})</option>`;
@@ -653,75 +657,53 @@
         const inputEmail = document.getElementById('input-redefinir-email');
         const inputSenha = document.getElementById('input-redefinir-senha');
         
-        if(!emailSelecionado) {
-            inputEmail.value = "";
-            inputSenha.value = "";
-            return;
-        }
-        
+        if(!emailSelecionado) { inputEmail.value = ""; inputSenha.value = ""; return; }
         const usuario = listaUsuarios.find(u => u.email === emailSelecionado);
-        if(usuario) {
-            inputEmail.value = usuario.email;
-            inputSenha.value = usuario.senha;
-        }
+        if(usuario) { inputEmail.value = usuario.email; inputSenha.value = usuario.senha; }
     }
 
-    function salvarRedefinicaoGestor() {
+    async function salvarRedefinicaoGestor() {
         const emailAntigoChave = document.getElementById('select-redefinir-usuario').value;
         const novoEmail = document.getElementById('input-redefinir-email').value.trim();
         const novaSenha = document.getElementById('input-redefinir-senha').value;
         
         if(!emailAntigoChave) return alert("Selecione um consultor primeiro!");
-        if(!novoEmail || !novaSenha) return alert("Os campos E-mail e Senha não podem ficar vazios!");
+        if(!novoEmail || !novaSenha) return alert("Os campos não podem ficar vazios!");
         
         if(novoEmail !== emailAntigoChave && listaUsuarios.some(u => u.email === novoEmail)) {
-            return alert("Erro: Esse novo e-mail já está cadastrado para outro usuário!");
+            return alert("Erro: Esse novo e-mail já está cadastrado!");
         }
         
-        listaUsuarios = listaUsuarios.map(u => {
-            if(u.email === emailAntigoChave) {
-                return { ...u, email: novoEmail, senha: novaSenha };
-            }
-            return u;
-        });
-        localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
+        // 1. Atualiza dados na nuvem (Tabela usuários)
+        const { error: err1 } = await _supabase.from('usuarios').update({ email: novoEmail, senha: novaSenha }).eq('email', emailAntigoChave);
         
-        if(emailAntigoChave !== novoEmail) {
-            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-            atvs = atvs.map(a => {
-                if(a.email === emailAntigoChave) {
-                    return { ...a, email: novoEmail };
-                }
-                return a;
-            });
-            localStorage.setItem('atividades_status', JSON.stringify(atvs));
+        // 2. Se mudou o e-mail, atualiza o histórico atrelado na nuvem (Tabela atividades)
+        if(!err1 && emailAntigoChave !== novoEmail) {
+            await _supabase.from('atividades').update({ email: novoEmail }).eq('email', emailAntigoChave);
         }
         
-        alert("Credenciais atualizadas com sucesso!");
+        alert("Credenciais atualizadas com sucesso na nuvem!");
         document.getElementById('input-redefinir-email').value = "";
         document.getElementById('input-redefinir-senha').value = "";
-        mostrarGestor();
+        await mostrarGestor();
     }
 
-    function excluirUsuarioGestor() {
+    async function excluirUsuarioGestor() {
         const emailSelecionado = document.getElementById('select-redefinir-usuario').value;
-        if(!emailSelecionado) return alert("Por favor, selecione um consultor na lista para poder excluí-lo.");
+        if(!emailSelecionado) return alert("Por favor, selecione um consultor.");
 
         const usuario = listaUsuarios.find(u => u.email === emailSelecionado);
-        const confirmacao = confirm(`⚠️ ATENÇÃO EXTREMA:\nVocê deseja realmente DELETAR o consultor "${usuario.nome}" do sistema?\n\nIsso apagará a conta dele e removerá seu histórico do ranking automaticamente.`);
+        const confirmacao = confirm(`⚠️ DELETAR permanentemente o consultor "${usuario.nome}" na nuvem?`);
         
         if (confirmacao) {
-            listaUsuarios = listaUsuarios.filter(u => u.email !== emailSelecionado);
-            localStorage.setItem('usuarios_status', JSON.stringify(listaUsuarios));
+            // Remove usuário e seu histórico do banco mundial
+            await _supabase.from('usuarios').delete().eq('email', emailSelecionado);
+            await _supabase.from('atividades').delete().eq('email', emailSelecionado);
 
-            let atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-            atvs = atvs.filter(a => a.email !== emailSelecionado);
-            localStorage.setItem('atividades_status', JSON.stringify(atvs));
-
-            alert("Consultor removido com sucesso!");
+            alert("Consultor removido de forma definitiva!");
             document.getElementById('input-redefinir-email').value = "";
             document.getElementById('input-redefinir-senha').value = "";
-            mostrarGestor();
+            await mostrarGestor();
         }
     }
 
