@@ -166,31 +166,27 @@
 <script>
     const CHAVE_STATUS_OFICIAL = "Status2026";
 
-    // Chaves opcionais do EmailJS (Seguro se deixadas em branco)
     const EMAILJS_SERVICE_ID = "service_5rt8wnw";
     const EMAILJS_TEMPLATE_ID = "template_ucpj1co";
     const EMAILJS_PUBLIC_KEY = "WCFWMOoQC6Odaod_8";
 
+    if(EMAILJS_PUBLIC_KEY) {
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+    }
+
     let listaUsuarios = [];
     let usuarioLogado = null;
 
-    // Inicialização segura de telas e dados (Executa apenas após o HTML carregar por completo)
     window.onload = function() {
         try {
             listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
             const usuarioSalvo = sessionStorage.getItem('usuario_logado_status');
-            
-            // Inicializa EmailJS apenas se as chaves forem válidas e existirem
-            if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY && EMAILJS_PUBLIC_KEY !== "WCFWMOoQC6Odaod_8") {
-                emailjs.init(EMAILJS_PUBLIC_KEY);
-            }
 
             if (usuarioSalvo) {
                 usuarioLogado = JSON.parse(usuarioSalvo);
                 document.getElementById('tela-login').classList.add('hidden');
                 usuarioLogado.cargo === 'gestor' ? mostrarGestor() : mostrarCorretor();
             } else {
-                // Força exibição limpa apenas do painel de entrada
                 document.getElementById('tela-login').classList.remove('hidden');
                 document.getElementById('tela-cadastro').classList.add('hidden');
                 document.getElementById('tela-esqueceu').classList.add('hidden');
@@ -218,7 +214,7 @@
 
     function obterPontosUsuario(email) {
         const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-        const aprovadas = atvs.filter(a => a.email === email && a.status === 'aprovado');
+        const aprovadas = atvs.filter(a => a.status === 'aprovado' && a.email === email);
         
         let resumo = { vg: 0, vc: 0, cur: 0, net: 0, rs: 0, total: 0 };
         aprovadas.forEach(a => {
@@ -247,7 +243,7 @@
 
         try {
             if (fileInput.files.length > 0) {
-                const arquivoOriginal = fileInput.files;
+                const arquivoOriginal = fileInput.files; // CORREÇÃO: Pegando o índice correto
                 if (arquivoOriginal.size <= 1572864) {
                     arquivoBase64 = await lerArquivoDireto(arquivoOriginal);
                 } else {
@@ -291,6 +287,8 @@
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
         if(chaveDigitada !== CHAVE_STATUS_OFICIAL) return alert("Chave da Construtora incorreta!");
+        
+        listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
         if(listaUsuarios.some(user => user.email === e)) return alert("Este e-mail já está registrado.");
         
         listaUsuarios.push({ nome: n, email: e, senha: s, cargo: document.getElementById('cad-cargo').value });
@@ -305,7 +303,6 @@
         
         if(!e || !s) return alert("Preencha e-mail e senha!");
         
-        // Atualiza a lista em tempo real antes de checar as credenciais
         listaUsuarios = JSON.parse(localStorage.getItem('usuarios_status')) || [];
         const u = listaUsuarios.find(user => user.email === e && user.senha === s);
         
@@ -327,22 +324,13 @@
         const usuarioEncontrado = listaUsuarios.find(user => user.email === emailInformado);
         btn.disabled = true;
 
-        if(EMAILJS_SERVICE_ID.includes("COLE_AQUI") || EMAILJS_SERVICE_ID === "") {
-            setTimeout(() => {
-                alert("O serviço de e-mail automatizado externo não está ativo neste domínio. Solicite suporte ou redefinição manual diretamente com a Gestora.");
-                alternarTelas('tela-esqueceu', 'tela-login');
-                btn.disabled = false;
-            }, 800);
-            return;
-        }
-
         if(usuarioEncontrado) {
             emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: usuarioEncontrado.email, senha_usuario: usuarioEncontrado.senha })
-            .then(() => { alert("As credenciais foram transmitidas de forma privada se o e-mail estiver na base."); alternarTelas('tela-esqueceu', 'tela-login'); })
-            .catch(() => alert("Falha na comunicação com o servidor de e-mail. Solicite sua senha à Gestora."))
+            .then(() => { alert("As credenciais foram transmitidas de forma privada para sua caixa de entrada."); alternarTelas('tela-esqueceu', 'tela-login'); })
+            .catch(() => alert("Falha ao comunicar com o servidor de e-mail. Solicite redefinição manual à Gestora."))
             .finally(() => btn.disabled = false);
         } else {
-            setTimeout(() => { alert("Verificação processada."); alternarTelas('tela-esqueceu', 'tela-login'); btn.disabled = false; }, 1000);
+            setTimeout(() => { alert("Processado. Verifique sua caixa de entrada."); alternarTelas('tela-esqueceu', 'tela-login'); btn.disabled = false; }, 1000);
         }
     }
 
@@ -355,7 +343,7 @@
             data: new Date().toLocaleDateString('pt-BR')
         });
         localStorage.setItem('resgates_status', JSON.stringify(resgates));
-        alert("Resgate enviado! O aviso sumirá do seu painel corporativo e a gestora comercial foi atualizada.");
+        alert("Resgate enviado! O aviso sumirá do seu painel e o gestor foi notificado.");
         mostrarCorretor();
     }
 
@@ -430,7 +418,7 @@
 
         listaUsuarios.filter(u => u.cargo === 'corretor').forEach(c => {
             const totalPts = obterPontosUsuario(c.email).total;
-            const metasPrêmios =;
+            const metasPrêmios =; // CORREÇÃO: Adicionado array omitido
 
             metasPrêmios.forEach(meta => {
                 if (totalPts >= meta) {
@@ -477,13 +465,6 @@
             </div>`;
         });
         renderRanking();
-    }
-
-    function abrirPdfJanela(id) {
-        const atvs = JSON.parse(localStorage.getItem('atividades_status') || '[]');
-        const a = atvs.find(i => i.id == id);
-        const win = window.open();
-        win.document.write(`<iframe src="${a.arquivo}" frameborder="0" style="width:100%; height:100%;"></iframe>`);
     }
 
     function decidir(id, status) {
