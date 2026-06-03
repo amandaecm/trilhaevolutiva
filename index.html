@@ -11,7 +11,7 @@
         .card { background: white; max-width: 1050px; margin: 20px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
         input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button { background: var(--primary); color: white; border: none; pointer: cursor; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         
         .logo-container { text-align: center; margin-bottom: 10px; }
@@ -360,7 +360,6 @@
         btn.innerText = "Enviar Atividade";
     }
 
-    // --- LOGICA REVISADA: VALIDAÇÃO MULTI-CHAVE BASEADA NO CARGO ---
     async function realizarCadastro() {
         const n = document.getElementById('cad-nome').value.trim();
         const e = document.getElementById('cad-email').value.trim();
@@ -370,7 +369,6 @@
 
         if(!n || !e || !s || !chaveDigitada) return alert("Preencha todos os campos obrigatórios!");
         
-        // Separação de chaves baseada no nível de acesso selecionado
         if (cargoSelecionado === 'gestor') {
             if (chaveDigitada !== CHAVE_GESTOR_OFICIAL) return alert("Chave de Acesso do Gestor incorreta!");
         } else {
@@ -408,7 +406,7 @@
         } else alert("Dados incorretos ou usuário não cadastrado.");
     }
 
-    function ejecutarEsqueceuSenha() {
+    function executarEsqueceuSenha() {
         const emailInformado = document.getElementById('esqueceu-email').value.trim();
         const caixaResposta = document.getElementById('resposta-recuperacao');
         const textoResposta = document.getElementById('texto-resposta-recuperacao');
@@ -438,7 +436,19 @@
         alternarTelas('tela-esqueceu', 'tela-login');
     }
 
+    // --- LÓGICA DE EXCLUSÃO AJUSTADA COM TRAVA TEMPORAL PARA O CONSULTOR ---
     async function apagarAtividade(id) {
+        // Se for corretor, aplica a verificação de data para a última semana do mês
+        if (usuarioLogado && usuarioLogado.cargo === 'corretor') {
+            const hoje = new Date();
+            const diaDoMes = hoje.getDate();
+            
+            // Trava ativada a partir do dia 24 do mês corrente (última semana estatística)
+            if (diaDoMes >= 24) {
+                return alert("⚠️ Acesso Bloqueado: Exclusões de atividades não são permitidas na última semana do mês devido ao fechamento e contabilização do ranking. Solicite suporte direto à gerência.");
+            }
+        }
+
         const confirmacao = confirm("⚠️ Você realmente quer apagar esta atividade?");
         if (confirmacao) {
             const { error } = await _supabase.from('atividades').delete().eq('id', id);
@@ -461,16 +471,16 @@
         
         document.getElementById('pontos-total-user').innerText = totalGeral;
 
-        let pointsNoCicloAtual = totalGeral % 1000;
-        if (pointsNoCicloAtual === 0 && totalGeral > 0) { pointsNoCicloAtual = 1000; }
-        document.getElementById('pontos-ciclo-user').innerText = pointsNoCicloAtual;
+        let pontosNoCicloAtual = totalGeral % 1000;
+        if (pontosNoCicloAtual === 0 && totalGeral > 0) { pontosNoCicloAtual = 1000; }
+        document.getElementById('pontos-ciclo-user').innerText = pontosNoCicloAtual;
 
         const barra = document.getElementById('barra-progresso');
-        let porcentagem = (pointsNoCicloAtual / 1000) * 100;
+        let porcentagem = (pontosNoCicloAtual / 1000) * 100;
         barra.style.width = porcentagem + "%";
         barra.innerText = Math.round(porcentagem) + "%";
 
-        let matizCor = (pointsNoCicloAtual / 1000) * 120;
+        let matizCor = (pontosNoCicloAtual / 1000) * 120;
         barra.style.backgroundColor = `hsl(${matizCor}, 80%, 45%)`;
 
         const boxPremio = document.getElementById('box-premio-alcançado');
@@ -480,26 +490,26 @@
         let ciclosCompletos = Math.floor(totalGeral / 1000);
         if(totalGeral % 1000 === 0 && totalGeral > 0) { ciclosCompletos = ciclosCompletos - 1; }
 
-        if (pointsNoCicloAtual >= 1000) {
+        if (pontosNoCicloAtual >= 1000) {
             boxPremio.className = "card-premio";
             let metaAlcancadaAlerta = (ciclosCompletos + 1) * 1000;
             boxPremio.innerText = `🏆 Você já alcançou ${metaAlcancadaAlerta} pontos, vamos começar de novo?`;
             boxPremio.classList.remove('hidden');
-        } else if (pointsNoCicloAtual >= 750) {
+        } else if (pontosNoCicloAtual >= 750) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = "🎁 Você alcançou o terceiro prêmio surpresa do ciclo atual, consulte sua gestão.";
             boxPremio.classList.remove('hidden');
-        } else if (pointsNoCicloAtual >= 500) {
+        } else if (pontosNoCicloAtual >= 500) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = "🎁 Você alcançou o segundo prêmio surpresa do ciclo atual, consulte sua gestão.";
             boxPremio.classList.remove('hidden');
-        } else if (pointsNoCicloAtual >= 250) {
+        } else if (pontosNoCicloAtual >= 250) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = "🎁 Você alcançou o primeiro prêmio surpresa do ciclo atual, consulte sua gestão.";
             boxPremio.classList.remove('hidden');
         }
 
-        if(totalGeral > 1000 && pointsNoCicloAtual < 250) {
+        if(totalGeral > 1000 && pontosNoCicloAtual < 250) {
             boxPremio.className = "card-premio";
             boxPremio.innerText = `🔄 Ciclo Anterior Concluído (${ciclosCompletos * 1000} pts)! Você iniciou uma nova contagem de prêmios. Boa sorte!`;
             boxPremio.classList.remove('hidden');
@@ -554,6 +564,7 @@
         if(!error) mostrarGestor();
     }
 
+    @chart [Pie Chart of Activities Weight to ranking performance]
     function renderRanking(atvs) {
         const tbody = document.getElementById('tabela-ranking');
         tbody.innerHTML = ""; 
