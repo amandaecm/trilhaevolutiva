@@ -300,6 +300,7 @@
         document.getElementById(mos).classList.remove('hidden');
     }
 
+    // --- CORREÇÃO DA FUNÇÃO DE ABAS GESTOR SEM CONFLITO DE RENDERIZAÇÃO ---
     function mudarAbaGestor(aba) {
         const btnGeral = document.getElementById('btn-aba-geral');
         const btnUsuarios = document.getElementById('btn-aba-usuarios');
@@ -314,14 +315,13 @@
         } else {
             btnGeral.classList.remove('ativa');
             btnUsuarios.classList.add('ativa');
-            contGeral.style.display = 'none';
             contGeral.classList.add('hidden');
             contUsuarios.classList.remove('hidden');
         }
     }
 
     function obterPontosUsuario(email, todasAtividades) {
-        const aprovadas = todasAtividades.filter(a => a.email === email && a.status === 'aprovado');
+        const aprovadas = todasAtividades.filter(a => a.email === email && a.status === 'approved' || a.status === 'aprovado');
         let resumo = { vg: 0, vc: 0, cur: 0, net: 0, rs: 0, total: 0 };
         aprovadas.forEach(a => {
             if (a.tipo === 'Venda_Gestor') resumo.vg += 100;
@@ -462,8 +462,8 @@
         let { data: atvs } = await _supabase.from('atividades').select('*');
         atvs = atvs || [];
 
-        const resumePts = obterPontosUsuario(usuarioLogado.email, atvs);
-        const totalGeral = resumePts.total;
+        const resumoPts = obterPontosUsuario(usuarioLogado.email, atvs);
+        const totalGeral = resumoPts.total;
         
         document.getElementById('pontos-total-user').innerText = totalGeral;
 
@@ -565,7 +565,7 @@
         tbody.innerHTML = ""; 
         
         let rank = listaUsuarios.filter(u => u.cargo === 'corretor').map(c => {
-            const r = obterPontosUsuario(c.email, atvs);
+            const r = obterPointsUsuario = obterPontosUsuario(c.email, atvs);
             return { nome: c.nome, ...r };
         }).sort((a,b) => b.total - a.total);
 
@@ -687,7 +687,7 @@
             await _supabase.from('atividades').update({ email: novoEmail }).eq('email', emailAntigoChave);
         }
         
-        alert("Credenciais atualizadas com sucesso na nuvem!");
+        alert("Credenciais updated com sucesso na nuvem!");
         document.getElementById('input-redefinir-email').value = "";
         document.getElementById('input-redefinir-senha').value = "";
         await mostrarGestor();
