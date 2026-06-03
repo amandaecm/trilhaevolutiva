@@ -11,7 +11,7 @@
         .card { background: white; max-width: 1050px; margin: 20px auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .hidden { display: none !important; }
         input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background: var(--primary); color: white; border: none; pointer: cursor; font-weight: bold; transition: 0.3s; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
         button:hover { opacity: 0.8; }
         
         .logo-container { text-align: center; margin-bottom: 10px; }
@@ -155,7 +155,7 @@
         
         <div class="box-observacao-email">
             ℹ️ <strong>Observação Importante:</strong><br>
-            Em caso de cursos, palestras ou participation em eventos, enviar certificado ou imagens para o e-mail: <strong>vendas@grupostatus.com.br</strong>
+            Em caso de cursos, palestras ou participação em eventos, enviar certificado ou imagens para o e-mail: <strong>vendas@grupostatus.com.br</strong>
         </div>
 
         <button id="btn-enviar" onclick="cadastrarAtividade()" style="background: var(--accent); margin-top:15px;">Enviar Atividade</button>
@@ -244,7 +244,6 @@
     </div>
 
 <script>
-    // Definição das constantes de autenticação da construtora
     const CHAVE_GESTOR_OFICIAL = "Status2026";
     const CHAVE_CORRETOR_OFICIAL = "consultorstatus";
     
@@ -436,14 +435,11 @@
         alternarTelas('tela-esqueceu', 'tela-login');
     }
 
-    // --- LÓGICA DE EXCLUSÃO AJUSTADA COM TRAVA TEMPORAL PARA O CONSULTOR ---
     async function apagarAtividade(id) {
-        // Se for corretor, aplica a verificação de data para a última semana do mês
         if (usuarioLogado && usuarioLogado.cargo === 'corretor') {
             const hoje = new Date();
             const diaDoMes = hoje.getDate();
             
-            // Trava ativada a partir do dia 24 do mês corrente (última semana estatística)
             if (diaDoMes >= 24) {
                 return alert("⚠️ Acesso Bloqueado: Exclusões de atividades não são permitidas na última semana do mês devido ao fechamento e contabilização do ranking. Solicite suporte direto à gerência.");
             }
@@ -466,8 +462,8 @@
         let { data: atvs } = await _supabase.from('atividades').select('*');
         atvs = atvs || [];
 
-        const resumoPts = obterPontosUsuario(usuarioLogado.email, atvs);
-        const totalGeral = resumoPts.total;
+        const resumePts = obterPontosUsuario(usuarioLogado.email, atvs);
+        const totalGeral = resumePts.total;
         
         document.getElementById('pontos-total-user').innerText = totalGeral;
 
@@ -564,7 +560,6 @@
         if(!error) mostrarGestor();
     }
 
-    @chart [Pie Chart of Activities Weight to ranking performance]
     function renderRanking(atvs) {
         const tbody = document.getElementById('tabela-ranking');
         tbody.innerHTML = ""; 
